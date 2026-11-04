@@ -1,0 +1,55 @@
+% common.tex - shared preamble for all ELL7282 A2 documents
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,longtable,tabularx,array,multirow}
+\usepackage[table]{xcolor}
+\usepackage{bytefield}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,shapes.geometric}
+\usepackage{pdflscape}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+\setlist{nosep,leftmargin=1.4em}
+\setlength{\parskip}{3pt}
+\setlength{\parindent}{0pt}
+
+\newcommand{\project}{WM-8 five-stage pipelined washing-machine microcontroller}
+\newcommand{\course}{ELL7282/ELL782 Introduction to Computer Architecture -- Assignment 2}
+\newcommand{\pass}{\textcolor{green!45!black}{\textbf{PASS}}}
+\newcommand{\fail}{\textcolor{red!75!black}{\textbf{FAIL}}}
+% invalid (V=0) pipeline entry: grey with an empty-set marker
+\newcommand{\bub}[1]{\textcolor{black!45}{$\varnothing$\,\texttt{#1}}}
+\newcommand{\sig}[1]{\texttt{#1}}
+\newcommand{\hex}[1]{\texttt{0x#1}}
+
+% cycle-trace table (used by generated/trace*.tex)
+\newenvironment{tracetab}{%
+  \scriptsize\setlength{\tabcolsep}{2.5pt}\renewcommand{\arraystretch}{1.15}%
+  \begin{longtable}{r p{3.0cm} p{3.0cm} p{3.0cm} p{3.0cm} p{3.0cm} c c c c p{4.6cm}}
+  \toprule
+  Cyc & IF (fetch PC) & ID (IF/ID) & EX (ID/EX) & MEM (EX/MEM) & WB (MEM/WB) &
+  Stall & Flush & Fwd A & Fwd B & Architectural writes (commit at end of cycle)\\
+  \midrule\endhead
+  \bottomrule\endfoot}{%
+  \end{longtable}}
+
+% validation table (used by generated/val_g*.tex)
+\newenvironment{valtab}{%
+  \footnotesize\renewcommand{\arraystretch}{1.2}%
+  \begin{longtable}{|p{0.6cm}|p{3.7cm}|p{4.2cm}|p{5.6cm}|p{1.0cm}|}
+  \hline
+  \rowcolor{black!8}\textbf{ID} & \textbf{Initial inputs / state, stimulus} & \textbf{Expected result} &
+  \textbf{Observed result} & \textbf{P/F}\\ \hline\endhead}{%
+  \end{longtable}}
+
+% program listing (used by generated/listing_*.tex)
+\newenvironment{listtab}{%
+  \footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.05}%
+  \begin{longtable}{l l c l l p{6.2cm}}
+  \toprule
+  Addr & Hex & Fmt & Label & Assembly & Comment\\
+  \midrule\endhead
+  \bottomrule\endfoot}{%
+  \end{longtable}}

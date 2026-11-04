@@ -1,0 +1,19 @@
+\texttt{00} & \texttt{1201} & I & \texttt{} & \texttt{LDI  R1, 0x01} & {\footnotesize } \\
+\texttt{01} & \texttt{1410} & I & \texttt{} & \texttt{LDI  R2, 0x10} & {\footnotesize ALU operand and RAM address} \\
+\texttt{02} & \texttt{1603} & I & \texttt{} & \texttt{LDI  R3, 0x03} & {\footnotesize } \\
+\texttt{03} & \texttt{1820} & I & \texttt{} & \texttt{LDI  R4, 0x20} & {\footnotesize RAM address for 8.3} \\
+\texttt{04} & \texttt{7680} & R & \texttt{} & \texttt{ST   R3, [R2]} & {\footnotesize RAM[0x10] = 0x03 (initialise before the load)} \\
+\texttt{05} & \texttt{0000} & N & \texttt{} & \texttt{NOP} & {\footnotesize } \\
+\texttt{06} & \texttt{3280} & R & \texttt{} & \texttt{ADD  R1, R2} & {\footnotesize R1 = 0x11} \\
+\texttt{07} & \texttt{4640} & R & \texttt{} & \texttt{SUB  R3, R1} & {\footnotesize R3 = 0x03-0x11 = 0xF2   (R1 from EX/MEM)} \\
+\texttt{08} & \texttt{6280} & R & \texttt{} & \texttt{LD   R1, [R2]} & {\footnotesize R1 = RAM[0x10] = 0x03} \\
+\texttt{09} & \texttt{3640} & R & \texttt{} & \texttt{ADD  R3, R1} & {\footnotesize 1 bubble, R1 from MEM/WB: R3 = 0xF5} \\
+\texttt{0A} & \texttt{3280} & R & \texttt{} & \texttt{ADD  R1, R2} & {\footnotesize R1 = 0x13} \\
+\texttt{0B} & \texttt{42C0} & R & \texttt{} & \texttt{SUB  R1, R3} & {\footnotesize R1 = 0x13-0xF5 = 0x1E  (youngest writer of R1)} \\
+\texttt{0C} & \texttt{7300} & R & \texttt{} & \texttt{ST   R1, [R4]} & {\footnotesize RAM[0x20] = 0x1E   (EX/MEM beats MEM/WB)} \\
+\texttt{0D} & \texttt{6B00} & R & \texttt{} & \texttt{LD   R5, [R4]} & {\footnotesize R5 = 0x1E} \\
+\texttt{0E} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, 0xF5} & {\footnotesize } \\
+\texttt{0F} & \texttt{7BC0} & R & \texttt{} & \texttt{ST   R5, [R7]} & {\footnotesize DISPLAY = 0x1E} \\
+\texttt{10} & \texttt{F000} & N & \texttt{} & \texttt{HALT} & {\footnotesize } \\
+\texttt{11} & \texttt{1CFF} & I & \texttt{} & \texttt{LDI  R6, 0xFF} & {\footnotesize younger than HALT: never executes} \\
+\texttt{12} & \texttt{7DC0} & R & \texttt{} & \texttt{ST   R6, [R7]} & {\footnotesize } \\

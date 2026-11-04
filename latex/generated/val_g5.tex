@@ -1,0 +1,6 @@
+5a & DOOR=1, software writes ACT=24 (LOCK+MOTOR\_EN) & ActualMotorEnable=1 & cyc 11: ACT=24, actual=1 & \pass \\ \hline
+5b & open door at cyc 40 (request still 1) & actual motor drops in the same cycle (combinational); TRIP latched at next edge & cyc 40: MOTOR\_EN req=1, actual=0, TRIP=0; cyc 41: TRIP=1 & \pass \\ \hline
+5c & re-close door at cyc 52, request still 1 & no automatic restart & cyc 52-61: actual=0, TRIP=1, request=1 & \pass \\ \hline
+5d & START 0$\rightarrow$1 at cyc 64 while MOTOR\_EN request still active & not a valid re-arm: TRIP stays 1 & cyc 65: TRIP=1 & \pass \\ \hline
+5e & software clears request (cyc 83); START edge with door open (cyc 92) & not a valid re-arm: TRIP stays 1 & cyc 93: TRIP=1 & \pass \\ \hline
+5f & door closed, request off, new START edge at cyc 120 & TRIP cleared; motor runs only after software requests it again & cyc 121: TRIP=0; actual=1 again at cyc 127 (ACT=24); DISPLAY=03 & \pass \\ \hline

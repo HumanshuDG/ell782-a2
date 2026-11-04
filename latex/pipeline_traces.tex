@@ -1,0 +1,137 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.6cm]{geometry}
+\input{common}
+\begin{document}
+\begin{center}
+{\Large\textbf{Cycle-by-Cycle Pipeline Traces (Sections 8.1--8.4)}}\\[2pt]
+\project\ -- \course
+\end{center}
+
+\section{How the traces were produced}
+The test benches \texttt{tests/t1\_hazards.circ} (Sections 8.1--8.3) and \texttt{tests/t2\_branch\_halt.circ} (Section 8.4) contain
+the unmodified \texttt{cpu} and \texttt{mmio} sub-circuits, the instruction ROM holding the test program, the data RAM, a
+power-on reset (first cycle), a cycle counter and the pipeline-monitor outputs of the CPU. These outputs are the PC of each
+pipeline register and its valid bit, \texttt{STALL}, \texttt{FLUSH}, \texttt{HALTED}, \texttt{FWD\_A}/\texttt{FWD\_B}, the
+write-back port (\texttt{WB\_WE}, \texttt{WB\_RD}, \texttt{WB\_DATA}) and the data-bus write (\texttt{D\_WE},
+\texttt{D\_ADDR}, \texttt{D\_WDATA}). One row is one clock cycle: the state after rising edge \emph{n}. Each instruction cell
+shows the instruction address and source text, taken from the \texttt{PC} field travelling with it. The
+rows were recorded by cycle-accurate simulation of the test-bench \texttt{.circ} netlists (\texttt{tools/circsim.py}); the
+raw rows are in \texttt{tests/expected/*.txt}, in the same tab-separated format that Logisim prints with
+\texttt{java -jar logisim-generic-2.7.1.jar tests/t1\_hazards.circ -tty table}, so they can be compared directly.
+
+\textbf{Notation.} \texttt{08 LD R1,[R2]} = valid entry; \bub{09 ADD R3,R1} = entry with \texttt{V}=0 (bubble or squashed
+instruction; its stale fields are shown only for orientation). \emph{Stall} = \texttt{STALL} (PC and IF/ID hold at the end of the
+cycle, ID/EX receives a bubble). \emph{Flush} = taken branch/jump or HALT in EX (IF/ID and ID/EX invalidated at the end of the
+cycle). \emph{Fwd A/B}: source of the EX operand \texttt{ra}/\texttt{rb} (\texttt{--} = value read in ID).
+\emph{Architectural writes}: register write-back and data-bus stores that commit at the rising edge \emph{ending} the cycle.
+
+\section{Section 8.1 -- ALU forwarding without stall}
+Program: \texttt{ADD R1,R2 (06); SUB R3,R1 (07)} with R1=01, R2=10, R3=03. In \textbf{cycle 10} of the table below,
+\texttt{SUB R3,R1} is in EX while \texttt{ADD R1,R2} is in MEM. \texttt{FWD\_B}=EX/MEM supplies R1=\hex{11}, there is no stall,
+and R3$\leftarrow$\hex{F2} is written back in cycle 12.
+
+\begin{landscape}
+\section{Section 8.2 -- load-use dependence (exactly one stall)}
+Program: \texttt{LD R1,[R2] (08); ADD R3,R1 (09)}, RAM[\hex{10}]=\hex{03} written earlier by \texttt{ST R3,[R2]}.
+\begin{tracetab}
+\input{generated/trace82}
+\end{tracetab}
+\vspace{-4mm}
+\begin{itemize}
+\item \textbf{Cycle 11}: \texttt{LD R1} is in EX and \texttt{ADD R3,R1} (which reads R1 via \texttt{rb}, \texttt{UB}=1) is in ID, so
+  \texttt{STALL}=1. This is the only stall cycle.
+\item \textbf{Cycle 12}: the PC (\hex{0A}) and IF/ID (\texttt{ADD R3,R1}) are frozen and ID/EX holds a bubble
+  (\bub{09}). Older instructions advance: \texttt{LD} reads RAM in MEM and \texttt{SUB} writes R3=\hex{F2} in WB. The stalled
+  \texttt{ADD} reads that R3 through the WB$\rightarrow$ID bypass.
+\item \textbf{Cycle 13}: \texttt{ADD R3,R1} is in EX and \texttt{LD} is in WB, so \texttt{FWD\_B}=MEM/WB supplies R1=\hex{03}. The load
+  was not forwarded from EX/MEM in cycle 12, when it was not yet ready. \textbf{Cycle 15}: R3$\leftarrow$\hex{F2}+\hex{03}=\hex{F5}.
+\end{itemize}
+
+\section{Section 8.3 -- youngest producer forwarded to store data}
+Program: \texttt{ADD R1,R2 (0A); SUB R1,R3 (0B); ST R1,[R4] (0C)} with R1=03, R2=10, R3=F5, R4=20.
+\begin{tracetab}
+\input{generated/trace83}
+\end{tracetab}
+\vspace{-4mm}
+\begin{itemize}
+\item \textbf{Cycle 15}: \texttt{SUB R1,R3} uses both forwarding paths at once: R1 from EX/MEM (\texttt{ADD}, \hex{13}) and R3
+  from MEM/WB (\texttt{ADD R3,R1}, \hex{F5}).
+\item \textbf{Cycle 16}: \texttt{ST R1,[R4]} is in EX. \emph{Two} in-flight producers of R1 exist: \texttt{SUB} in EX/MEM
+  (\hex{1E}) and the older \texttt{ADD} in MEM/WB (\hex{13}). \texttt{FWD\_A}=EX/MEM, so the youngest wins and the store data is
+  \hex{1E}. The address R4 comes from the register file (\texttt{FWD\_B}=\texttt{--}).
+\item \textbf{Cycle 17}: the store commits once in MEM, RAM[\hex{20}]$\leftarrow$\hex{1E} (not the stale \hex{13}). The next
+  instruction \texttt{LD R5,[R4]} reads back \hex{1E}, which the program then copies to \texttt{DISPLAY}.
+\end{itemize}
+
+\section{Section 8.4 -- taken branch squashes a wrong-path actuator store}
+Program: \texttt{SUB R1,R1 (05); BEQZ R1,target1 (06); ST R2,[R4] (07); ADD R3,R4 (08); target1: (09)}
+with R2=\hex{21} (would open the valve and lock the door) and R4=\hex{F4} (\texttt{Rvalve} = actuator latch).
+\begin{tracetab}
+\input{generated/trace84}
+\end{tracetab}
+\vspace{-4mm}
+\begin{itemize}
+\item \textbf{Cycle 9}: \texttt{BEQZ R1} is in EX and tests R1, forwarded from EX/MEM (\texttt{SUB R1,R1} = 0). The branch is
+  taken, so \texttt{FLUSH}=1 and \texttt{PC}$\leftarrow$\hex{09}. At the same edge the wrong-path \texttt{ST R2,[R4]} (in ID)
+  and \texttt{ADD R3,R4} (in IF) are written into ID/EX and IF/ID with \texttt{V}=0.
+\item \textbf{Cycles 10--12}: the squashed entries keep moving down the pipe as bubbles. \texttt{ST R2,[R4]} reaches MEM in
+  cycle 11 with \texttt{V}=0, so \texttt{D\_WE}=0, the actuator latch stays \hex{00} and \texttt{VALVE\_IN} never rises.
+  \texttt{ADD R3,R4} never writes R3. Branch penalty = 2 cycles (09 is fetched in cycle 10).
+\item \textbf{Cycle 12}: \texttt{BNEZ R1,bad} is not taken (no flush). \textbf{Cycle 13}: \texttt{BNEZ R3,target2} is taken
+  and squashes the wrong-path \texttt{HALT} at \hex{0B}, which therefore never stops the machine (see full trace, Appendix B).
+\end{itemize}
+
+\end{landscape}
+
+\section{Source-use detection (no stalls on fields that are not read)}
+The decoder emits \texttt{UA} (instruction reads \texttt{ra}=\texttt{IR[11:9]}) and \texttt{UB} (reads \texttt{rb}=\texttt{IR[8:6]}):
+\begin{center}\small
+\begin{tabular}{l l l}
+\toprule
+\texttt{UA}=1 & \texttt{ADD, SUB, AND, SGEU, ADDI, ST} (data), \texttt{BEQZ, BNEZ} (tested register) & \\
+\texttt{UB}=1 & \texttt{MOV, ADD, SUB, AND, SGEU, LD} (address), \texttt{ST} (address) & \\
+neither & \texttt{NOP, LDI, JMP, HALT}, unassigned \hex{D}/\hex{E} & \\
+\bottomrule
+\end{tabular}
+\end{center}
+The load-use check is \texttt{IFID.V}$\wedge$\texttt{IDEX.V}$\wedge$\texttt{IDEX.MR}$\wedge$[(\texttt{UA}$\wedge$\texttt{RA}=\texttt{IDEX.RA})
+$\vee$(\texttt{UB}$\wedge$\texttt{RB}=\texttt{IDEX.RA})]. Without \texttt{UA}/\texttt{UB}, the following cases would stall although
+they read no register: \texttt{LDI R1,..} after \texttt{LD R1,..} (\texttt{ra} field equal), \texttt{JMP 0x4C} (bits 8:6 of the
+target = 001), and \texttt{ADDI R3,0x40} or \texttt{BEQZ R2,0x47} (imm bits 7:6 and reserved bit 8 form a fake \texttt{rb}).
+\texttt{MOV Rd,Rs} and \texttt{LD Rd,[Rs]} do not read \texttt{Rd}, so they must not stall on it. Forwarding selects are
+qualified the same way (\texttt{USE\_A}=\texttt{IDEX.V}$\wedge$\texttt{UA}), so the monitor never reports spurious forwarding for
+bubbles or unused fields. Bubbles (\texttt{IFID.V}=0 or \texttt{IDEX.V}=0) never cause a stall.
+
+\section{A store commits at most once}
+The data-bus write strobe is \texttt{D\_WE}=\texttt{EXMEM.V}$\wedge$\texttt{EXMEM.MW}, and the RAM, \texttt{ACT},
+\texttt{DISPLAY}, \texttt{T\_LIMIT} and \texttt{T\_CTRL} registers sample it only at the rising edge that ends the MEM cycle.
+Stalls freeze only \texttt{PC} and IF/ID. EX/MEM and MEM/WB load new contents every cycle, so a store occupies EX/MEM for
+exactly one cycle and the stalled copy in ID is not yet in MEM. On a flush or halt, the squashed copies are written with
+\texttt{V}=0. In every trace each store appears in the \emph{writes} column once (e.g.\ RAM[\hex{20}] in cycle 17
+above), and squashed stores never appear (cycle 11 of 8.4).
+
+\appendix
+\begin{landscape}
+\section{Full trace of \texttt{t1\_hazards} (cycles 0--24)}
+Cycles 0--1: power-on reset, then the first fetch. Cycle 20: \texttt{HALT} in EX flushes the younger \texttt{LDI R6} and freezes the PC.
+From cycle 21 \texttt{HALTED}=1, and older instructions drain.
+\begin{tracetab}
+\input{generated/trace_t1_full}
+\end{tracetab}
+\section{Full trace of \texttt{t2\_branch\_halt} (cycles 0--26)}
+Wrong-path \texttt{HALT}s at \hex{0B} (squashed in cycle 13) and \hex{0F}/\hex{10} (squashed by \texttt{JMP} in cycle 17) are
+ignored. The real \texttt{HALT} at \hex{13} is in EX in cycle 22 and kills the younger \texttt{ST R2,[R4]} at \hex{14}.
+\begin{tracetab}
+\input{generated/trace_t2_full}
+\end{tracetab}
+\end{landscape}
+\section{Test program listings}
+\textbf{t1\_hazards.asm}
+\begin{listtab}
+\input{generated/listing_t1}
+\end{listtab}
+\textbf{t2\_branch\_halt.asm}
+\begin{listtab}
+\input{generated/listing_t2}
+\end{listtab}
+\end{document}

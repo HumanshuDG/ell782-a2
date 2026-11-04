@@ -1,0 +1,38 @@
+\texttt{00} & \texttt{1EF9} & I & \texttt{} & \texttt{LDI  R7, 0xF9} & {\footnotesize T\_LIMIT} \\
+\texttt{01} & \texttt{1CFA} & I & \texttt{} & \texttt{LDI  R6, 0xFA} & {\footnotesize T\_CTRL} \\
+\texttt{02} & \texttt{1AFB} & I & \texttt{} & \texttt{LDI  R5, 0xFB} & {\footnotesize T\_STATUS} \\
+\texttt{03} & \texttt{18F8} & I & \texttt{} & \texttt{LDI  R4, 0xF8} & {\footnotesize T\_COUNT} \\
+\texttt{04} & \texttt{1206} & I & \texttt{} & \texttt{LDI  R1, 6} & {\footnotesize } \\
+\texttt{05} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize LIMIT = 6} \\
+\texttt{06} & \texttt{1203} & I & \texttt{} & \texttt{LDI  R1, 0x03} & {\footnotesize } \\
+\texttt{07} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize interval 1: clear + enable} \\
+\texttt{08} & \texttt{6540} & R & \texttt{poll1} & \texttt{LD   R2, [R5]} & {\footnotesize } \\
+\texttt{09} & \texttt{9408} & I & \texttt{} & \texttt{BEQZ R2, poll1} & {\footnotesize load-use stall every iteration (timer keeps counting)} \\
+\texttt{0A} & \texttt{6700} & R & \texttt{} & \texttt{LD   R3, [R4]} & {\footnotesize COUNT kept counting past LIMIT} \\
+\texttt{0B} & \texttt{6540} & R & \texttt{} & \texttt{LD   R2, [R5]} & {\footnotesize MATCH still 1 (sticky)} \\
+\texttt{0C} & \texttt{120A} & I & \texttt{} & \texttt{LDI  R1, 10} & {\footnotesize } \\
+\texttt{0D} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize LIMIT = 10} \\
+\texttt{0E} & \texttt{1203} & I & \texttt{} & \texttt{LDI  R1, 0x03} & {\footnotesize } \\
+\texttt{0F} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize interval 2: clear COUNT+MATCH, re-arm} \\
+\texttt{10} & \texttt{6540} & R & \texttt{} & \texttt{LD   R2, [R5]} & {\footnotesize MATCH = 0 after clear} \\
+\texttt{11} & \texttt{6540} & R & \texttt{poll2} & \texttt{LD   R2, [R5]} & {\footnotesize } \\
+\texttt{12} & \texttt{9411} & I & \texttt{} & \texttt{BEQZ R2, poll2} & {\footnotesize } \\
+\texttt{13} & \texttt{1200} & I & \texttt{} & \texttt{LDI  R1, 0x00} & {\footnotesize } \\
+\texttt{14} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize LIMIT = 0 (comparison disabled)} \\
+\texttt{15} & \texttt{1203} & I & \texttt{} & \texttt{LDI  R1, 0x03} & {\footnotesize } \\
+\texttt{16} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize clear + enable} \\
+\texttt{17} & \texttt{0000} & N & \texttt{} & \texttt{NOP} & {\footnotesize } \\
+\texttt{18} & \texttt{0000} & N & \texttt{} & \texttt{NOP} & {\footnotesize } \\
+\texttt{19} & \texttt{0000} & N & \texttt{} & \texttt{NOP} & {\footnotesize } \\
+\texttt{1A} & \texttt{1200} & I & \texttt{} & \texttt{LDI  R1, 0x00} & {\footnotesize } \\
+\texttt{1B} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize disable (no clear): COUNT frozen} \\
+\texttt{1C} & \texttt{6700} & R & \texttt{} & \texttt{LD   R3, [R4]} & {\footnotesize R3 = frozen COUNT} \\
+\texttt{1D} & \texttt{77C0} & R & \texttt{} & \texttt{ST   R3, [R7]} & {\footnotesize LIMIT = COUNT -$>$ MATCH must stay 0} \\
+\texttt{1E} & \texttt{6540} & R & \texttt{} & \texttt{LD   R2, [R5]} & {\footnotesize R2 = 0} \\
+\texttt{1F} & \texttt{12F5} & I & \texttt{} & \texttt{LDI  R1, 0xF5} & {\footnotesize } \\
+\texttt{20} & \texttt{7440} & R & \texttt{} & \texttt{ST   R2, [R1]} & {\footnotesize DISPLAY = MATCH = 0} \\
+\texttt{21} & \texttt{1203} & I & \texttt{} & \texttt{LDI  R1, 0x03} & {\footnotesize } \\
+\texttt{22} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize LIMIT = 3} \\
+\texttt{23} & \texttt{1201} & I & \texttt{} & \texttt{LDI  R1, 0x01} & {\footnotesize } \\
+\texttt{24} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize enable, no clear: COUNT runs ..FF -$>$ 00 -$>$ 03 =$>$ MATCH} \\
+\texttt{25} & \texttt{F000} & N & \texttt{} & \texttt{HALT} & {\footnotesize timer keeps ticking while halted} \\

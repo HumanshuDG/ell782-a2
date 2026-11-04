@@ -1,0 +1,51 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.6cm]{geometry}
+\input{common}
+\begin{document}
+\begin{center}
+{\Large\textbf{Program Listing -- Washing-Machine Control Program}}\\[2pt]
+\project\ -- \course
+\end{center}
+
+Source: \texttt{program.asm}. ROM image: \texttt{program.hex} (Logisim \texttt{v2.0 raw} format, one 16-bit word per address,
+load with \emph{right-click ROM $\rightarrow$ Load Image}). The same words are already stored in the ROM of
+\texttt{washing\_pipeline.circ}. The encoding is mechanical: \textbf{R} = \texttt{op$\ll$12 | ra$\ll$9 | rb$\ll$6},
+\textbf{I} = \texttt{op$\ll$12 | ra$\ll$9 | imm8}, \textbf{N} = \texttt{op$\ll$12}
+(\texttt{tools/asm.py} only automates this table look-up). The program has 180 words (\hex{00}--\hex{B3}). Unused ROM words are \hex{0000} (\texttt{NOP}).
+
+\subsection*{Symbols}
+\begin{center}\scriptsize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l l l l l l}
+\toprule
+I/O & & RAM variables & & Actuator patterns (\texttt{ACT}) & \\
+\midrule
+\texttt{IN\_STATUS} & \hex{F0} & \texttt{V\_TARGET} & \hex{00} & \texttt{A\_OFF}   & \hex{00} all off, unlocked\\
+\texttt{WATER\_LEVEL} & \hex{F1} & \texttt{V\_WASH} & \hex{01} & \texttt{A\_LOCK}  & \hex{20} DOOR\_LOCK\\
+\texttt{TEMP} & \hex{F2} & \texttt{V\_SPIN} & \hex{02} & \texttt{A\_FILL}  & \hex{21} LOCK + VALVE\_IN\\
+\texttt{DRUM\_RPM} & \hex{F3} & \texttt{V\_DRAIN} & \hex{03} & \texttt{A\_WASH}  & \hex{24} LOCK + MOTOR\_EN (+\hex{10} DIR)\\
+\texttt{ACT} & \hex{F4} & \texttt{V\_TAG} & \hex{04} & \texttt{A\_DRAIN} & \hex{28} LOCK + PUMP\_OUT\\
+\texttt{DISPLAY} & \hex{F5} & \texttt{V\_TEMP} & \hex{05} & \texttt{A\_SPIN}  & \hex{2C} LOCK + PUMP + MOTOR\_EN\\
+\texttt{T\_COUNT/LIMIT/CTRL/STATUS} & \hex{F8}--\hex{FB} & & & \texttt{A\_DONE}  & \hex{40} BUZZER, unlocked\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Mode parameters (\texttt{MODE[0]} selects, \texttt{MODE[1]} ignored)}
+\begin{center}\footnotesize
+\begin{tabular}{l c c c c c}
+\toprule
+Mode & fill: \texttt{WL} $\ge$ & wash & spin & drain: \texttt{WL} $\le$ & DISPLAY tag (MODE)\\
+\midrule
+NORMAL (\texttt{MODE}=00 or 10) & 100 (\hex{64}) & 64 ticks & 32 ticks & 10 & \hex{0}x (00) / \hex{2}x (10)\\
+HEAVY (\texttt{MODE}=01 or 11)  & 160 (\hex{A0}) & 96 ticks & 48 ticks & 10 & \hex{1}x (01) / \hex{3}x (11)\\
+\bottomrule
+\end{tabular}\\[2pt]
+DISPLAY low nibble: 1 idle, 2 lock/check, 3 fill, 4 wash, 5 drain, 6 spin, 7 stopping, 8 done;
+\hex{E1} door-open abort, \hex{EE} safety trip. High nibble = \texttt{MODE}$\ll$2 (snapshot).
+\end{center}
+
+\subsection*{Address / hex / assembly table}
+\begin{listtab}
+\input{generated/listing_program}
+\end{listtab}
+\end{document}

@@ -1,0 +1,203 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.8cm]{geometry}
+\input{common}
+\title{\vspace{-1.2cm}\textbf{ISA Specification}\\[2pt]\large \project}
+\author{\course}
+\date{}
+\begin{document}
+\maketitle
+\vspace{-1cm}
+
+\section{Programmer's model}
+\begin{itemize}
+\item 8-bit data path; all arithmetic is modulo 256. Eight general registers \texttt{R0}--\texttt{R7};
+      none is hard-wired to zero and none is cleared by reset (software initialises every register it reads).
+\item 16-bit fixed-length instructions in a 256-word instruction ROM. The 8-bit \texttt{PC} addresses
+      instruction \emph{words}, is 0 after reset and normally increments by one (wrapping \hex{FF}$\rightarrow$\hex{00}).
+\item Data space: 256 byte addresses -- RAM \hex{00}--\hex{7F}, reserved \hex{80}--\hex{EF} (reads 0, writes ignored),
+      peripherals \hex{F0}--\hex{FF} (see \texttt{memory\_map.pdf}). Only register-indirect addressing \texttt{[Rs]} is provided.
+\item No condition flags. Branches test a register for zero; the custom \texttt{SGEU} produces a 0/1 compare result.
+\item Branch/jump targets are \emph{absolute} 8-bit instruction-word addresses; there are no delay slots
+      (the two wrong-path instructions fetched after a taken branch are squashed in hardware).
+\end{itemize}
+
+\section{Instruction formats (three formats)}
+Register fields are always in the same place, so the register file can be read in ID before the
+instruction is fully decoded: \textbf{ra} = \texttt{IR[11:9]} (destination / first source / store data / tested register) and
+\textbf{rb} = \texttt{IR[8:6]} (second source / address register).
+
+\begin{center}
+\makebox[2.2cm][l]{\textbf{R}-format}%
+\begin{bytefield}[bitwidth=1.55em]{16}
+\bitheader[endianness=big]{0-15}\\
+\bitbox{4}{opcode} & \bitbox{3}{ra} & \bitbox{3}{rb} & \bitbox{6}{\color{black!55}000000 (reserved)}
+\end{bytefield}\\[6pt]
+\makebox[2.2cm][l]{\textbf{I}-format}%
+\begin{bytefield}[bitwidth=1.55em]{16}
+\bitbox{4}{opcode} & \bitbox{3}{ra} & \bitbox{1}{\color{black!55}\tiny 0} & \bitbox{8}{imm8 / target}
+\end{bytefield}\\[6pt]
+\makebox[2.2cm][l]{\textbf{N}-format}%
+\begin{bytefield}[bitwidth=1.55em]{16}
+\bitbox{4}{opcode} & \bitbox{12}{\color{black!55}000000000000 (reserved)}
+\end{bytefield}
+\end{center}
+
+\textbf{Reserved bits.} Software (and the assembler) must write reserved bits as 0. The hardware never
+decodes them: \texttt{IR[5:0]} of R-format, \texttt{IR[8]} of I-format, \texttt{IR[11:0]} of N-format and the
+\texttt{ra} field of \texttt{JMP} are ignored, so any value there produces the same, deterministic behaviour.
+Because the \texttt{rb} field physically overlaps \texttt{imm8[7:6]} and \texttt{IR[8]}, the hardware only treats a
+field as a register source when the opcode actually reads it (\emph{source-use} bits \texttt{UA}/\texttt{UB},
+Section~\ref{sec:cw}); otherwise immediates would create false load-use stalls.
+
+\section{Opcode map and semantics}
+\begin{center}
+\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{c l c p{7.3cm} l l}
+\toprule
+Op & Mnemonic & Fmt & Semantics & Reads & Writes\\
+\midrule
+\hex{0} & \texttt{NOP}              & N & no state change, \texttt{PC}$\leftarrow$\texttt{PC}+1 & -- & -- \\
+\hex{1} & \texttt{LDI Rd, imm8}     & I & \texttt{Rd}$\leftarrow$\texttt{imm8} (bit pattern copied, no extension) & -- & Rd \\
+\hex{2} & \texttt{MOV Rd, Rs}       & R & \texttt{Rd}$\leftarrow$\texttt{Rs} & rb & Rd \\
+\hex{3} & \texttt{ADD Rd, Rs}       & R & \texttt{Rd}$\leftarrow$(\texttt{Rd}+\texttt{Rs}) mod 256 & ra, rb & Rd \\
+\hex{4} & \texttt{SUB Rd, Rs}       & R & \texttt{Rd}$\leftarrow$(\texttt{Rd}$-$\texttt{Rs}) mod 256 & ra, rb & Rd \\
+\hex{5} & \texttt{AND Rd, Rs}       & R & \texttt{Rd}$\leftarrow$\texttt{Rd} AND \texttt{Rs} & ra, rb & Rd \\
+\hex{6} & \texttt{LD Rd, [Rs]}      & R & \texttt{Rd}$\leftarrow$\texttt{DATA[Rs]} (read in MEM) & rb & Rd \\
+\hex{7} & \texttt{ST Rd, [Rs]}      & R & \texttt{DATA[Rs]}$\leftarrow$\texttt{Rd} (written once, in MEM) & ra, rb & memory/IO \\
+\hex{8} & \texttt{ADDI Rd, imm8}    & I & \texttt{Rd}$\leftarrow$(\texttt{Rd}+\texttt{imm8}) mod 256 (\hex{FF} adds $-1$) & ra & Rd \\
+\hex{9} & \texttt{BEQZ Rs, target}  & I & if \texttt{Rs}=0: \texttt{PC}$\leftarrow$\texttt{target} & ra & PC \\
+\hex{A} & \texttt{BNEZ Rs, target}  & I & if \texttt{Rs}$\neq$0: \texttt{PC}$\leftarrow$\texttt{target} & ra & PC \\
+\hex{B} & \texttt{JMP target}       & I & \texttt{PC}$\leftarrow$\texttt{target} (ra field ignored) & -- & PC \\
+\hex{C} & \texttt{SGEU Rd, Rs} \textbf{(custom)} & R & \texttt{Rd}$\leftarrow$(\texttt{Rd}$\ge_u$\texttt{Rs}) ? \hex{01} : \hex{00} & ra, rb & Rd \\
+\hex{D} & \emph{unassigned}         & -- & executes exactly as \texttt{NOP} (all-zero control word) & -- & -- \\
+\hex{E} & \emph{unassigned}         & -- & executes exactly as \texttt{NOP} (all-zero control word) & -- & -- \\
+\hex{F} & \texttt{HALT}             & N & older instructions complete, younger ones are squashed, fetch stops until reset & -- & halt latch \\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{Unassigned opcodes} \hex{D}/\hex{E} decode to one-hot lines that feed no OR term of the control word, so
+all of \texttt{RW}, \texttt{MW}, \texttt{BZ}, \texttt{BNZ}, \texttt{JP} and \texttt{HT} are 0: no register, memory, I/O or PC side effect, and
+they cannot stall the pipeline (\texttt{UA}=\texttt{UB}=0).
+
+\section{Bit-level decode table}
+\begin{center}
+\small
+\begin{tabular}{l c c c c l}
+\toprule
+Instruction & \texttt{[15:12]} & \texttt{[11:9]} & \texttt{[8:6]} / \texttt{[8]} & \texttt{[5:0]} / \texttt{[7:0]} & unused bits \\
+\midrule
+\texttt{NOP}           & 0000 & 000 & 000 & 000000 & \texttt{[11:0]} reserved\\
+\texttt{LDI Rd,imm}    & 0001 & d   & \texttt{[8]}=0 & imm8 & \texttt{[8]}\\
+\texttt{MOV Rd,Rs}     & 0010 & d   & s   & 000000 & \texttt{[5:0]}\\
+\texttt{ADD Rd,Rs}     & 0011 & d   & s   & 000000 & \texttt{[5:0]}\\
+\texttt{SUB Rd,Rs}     & 0100 & d   & s   & 000000 & \texttt{[5:0]}\\
+\texttt{AND Rd,Rs}     & 0101 & d   & s   & 000000 & \texttt{[5:0]}\\
+\texttt{LD Rd,[Rs]}    & 0110 & d   & s   & 000000 & \texttt{[5:0]}\\
+\texttt{ST Rd,[Rs]}    & 0111 & d (data) & s (address) & 000000 & \texttt{[5:0]}\\
+\texttt{ADDI Rd,imm}   & 1000 & d   & \texttt{[8]}=0 & imm8 & \texttt{[8]}\\
+\texttt{BEQZ Rs,t}     & 1001 & s   & \texttt{[8]}=0 & target & \texttt{[8]}\\
+\texttt{BNEZ Rs,t}     & 1010 & s   & \texttt{[8]}=0 & target & \texttt{[8]}\\
+\texttt{JMP t}         & 1011 & 000 & \texttt{[8]}=0 & target & \texttt{[11:8]}\\
+\texttt{SGEU Rd,Rs}    & 1100 & d   & s   & 000000 & \texttt{[5:0]}\\
+\texttt{HALT}          & 1111 & 000 & 000 & 000000 & \texttt{[11:0]}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Machine-code examples (one per format)}
+\begin{center}
+\small
+\begin{tabular}{l l l l}
+\toprule
+Format & Assembly & Binary (op | ra | rb/imm) & Hex\\
+\midrule
+R & \texttt{ADD R1, R2}   & \texttt{0011 | 001 | 010 | 000000} & \hex{3280}\\
+R & \texttt{ST R1, [R4]}  & \texttt{0111 | 001 | 100 | 000000} & \hex{7300}\\
+R & \texttt{SGEU R1, R4}  & \texttt{1100 | 001 | 100 | 000000} & \hex{C300}\\
+I & \texttt{LDI R1, 0x64} & \texttt{0001 | 001 | 0 | 01100100} & \hex{1264}\\
+I & \texttt{ADDI R2, -3}  & \texttt{1000 | 010 | 0 | 11111101} & \hex{84FD}\\
+I & \texttt{BEQZ R1, 0x0A}& \texttt{1001 | 001 | 0 | 00001010} & \hex{920A}\\
+I & \texttt{JMP 0x10}     & \texttt{1011 | 000 | 0 | 00010000} & \hex{B010}\\
+N & \texttt{HALT}         & \texttt{1111 | 000000000000}       & \hex{F000}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Control word produced by the decoder}\label{sec:cw}
+The 4-bit opcode drives a gate-level 4:16 decoder; the 13-bit control word \texttt{CW} is formed by OR-ing one-hot lines
+and travels in the ID/EX register.
+\begin{center}
+\scriptsize\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{l c c c c c c c c c c c c}
+\toprule
+ & \texttt{RW} & \texttt{MR} & \texttt{MW} & \texttt{UA} & \texttt{UB} & \texttt{YI} & \texttt{AOP[1:0]} & \texttt{SB} & \texttt{BZ} & \texttt{BNZ} & \texttt{JP} & \texttt{HT}\\
+CW bit & 0 & 1 & 2 & 3 & 4 & 5 & 7:6 & 8 & 9 & 10 & 11 & 12\\
+\midrule
+NOP, \hex{D}, \hex{E} & 0&0&0&0&0&0&00&0&0&0&0&0\\
+LDI  & 1&0&0&0&0&1&10&0&0&0&0&0\\
+MOV  & 1&0&0&0&1&0&10&0&0&0&0&0\\
+ADD  & 1&0&0&1&1&0&00&0&0&0&0&0\\
+SUB  & 1&0&0&1&1&0&00&1&0&0&0&0\\
+AND  & 1&0&0&1&1&0&01&0&0&0&0&0\\
+LD   & 1&1&0&0&1&0&10&0&0&0&0&0\\
+ST   & 0&0&1&1&1&0&10&0&0&0&0&0\\
+ADDI & 1&0&0&1&0&1&00&0&0&0&0&0\\
+BEQZ & 0&0&0&1&0&0&00&0&1&0&0&0\\
+BNEZ & 0&0&0&1&0&0&00&0&0&1&0&0\\
+JMP  & 0&0&0&0&0&0&00&0&0&0&1&0\\
+SGEU & 1&0&0&1&1&0&11&1&0&0&0&0\\
+HALT & 0&0&0&0&0&0&00&0&0&0&0&1\\
+\bottomrule
+\end{tabular}
+\end{center}
+\texttt{RW} register write, \texttt{MR} load, \texttt{MW} store, \texttt{UA}/\texttt{UB} instruction reads ra/rb,
+\texttt{YI} ALU-Y = imm8, \texttt{AOP} ALU result select (00 adder, 01 AND, 10 pass-Y, 11 carry), \texttt{SB} subtract
+(invert Y, carry-in 1), \texttt{BZ}/\texttt{BNZ}/\texttt{JP} control transfer, \texttt{HT} halt.
+\texttt{LD}/\texttt{ST} use AOP=10 so the ALU passes the address register (\texttt{rb}) to EX/MEM;
+the store data is the forwarded \texttt{ra} operand.
+
+\section{Immediate and branch semantics}
+\begin{itemize}
+\item \texttt{LDI} copies the 8-bit pattern; \texttt{ADDI} adds it modulo 256 (so \texttt{ADDI R2,-3} = \texttt{ADDI R2,0xFD}).
+\item \texttt{BEQZ}/\texttt{BNEZ} test the (forwarded) value of \texttt{ra} in EX. \texttt{JMP} is unconditional.
+      A taken transfer loads \texttt{PC}$\leftarrow$\texttt{imm8} at the end of EX and invalidates IF/ID and ID/EX:
+      penalty = 2 cycles; not-taken branches cost nothing.
+\item \texttt{HALT} acts only when it is valid in EX: fetch stops, the two younger entries are invalidated,
+      older instructions in MEM/WB finish. A \texttt{HALT} on a squashed path never reaches EX valid.
+\end{itemize}
+
+\section{Application-specific instruction: \texttt{SGEU Rd, Rs} (opcode \hex{C})}
+\textbf{Semantics.} \texttt{Rd}$\leftarrow$1 if \texttt{Rd}$\ge$\texttt{Rs} as \emph{unsigned} 8-bit numbers, otherwise 0
+(result is \hex{00} or \hex{01}; \texttt{Rs} unchanged). R-format: \texttt{1100 ddd sss 000000}.
+
+\textbf{Why.} The controller must detect \texttt{WATER\_LEVEL}$\ge$\texttt{target} while filling and
+\texttt{WATER\_LEVEL}$\le$\texttt{threshold} while draining, even if the sensor jumps over the threshold
+(e.g.\ 99$\rightarrow$102 with target 100), so equality tests are useless. The base ISA has no flags; \texttt{SUB} alone
+cannot give an unsigned order when operands differ by more than 127 (e.g.\ $200-10$ = \hex{BE} looks negative).
+A correct software routine must split on the operand MSBs:
+\begin{center}\footnotesize
+\begin{tabular}{l l}
+\texttt{MOV R2,R1; AND R2,R6} & ; R6 = \hex{80}: MSB(WL)\\
+\texttt{MOV R3,R4; AND R3,R6} & ; MSB(target)\\
+\texttt{SUB R3,R2; BEQZ R3,same} & ; equal MSBs?\\
+\texttt{BNEZ R2,ge; JMP lt} & ; different MSBs: WL$\ge$T iff MSB(WL)=1\\
+\texttt{same: MOV R2,R1; SUB R2,R4; AND R2,R6; BEQZ R2,ge} & ; same MSB: sign of the difference\\
+\end{tabular}
+\end{center}
+That is 12 instructions, 3 extra registers, a mask constant and up to 3 taken branches (2 bubbles each)
+per sample. With \texttt{SGEU} the fill test is \texttt{LD R1,[WL]; SGEU R1,R4; BEQZ R1,fill} (3 instructions), and the
+drain test is \texttt{LD R1,[WL]; MOV R2,R4; SGEU R2,R1; BEQZ R2,drain}. The polling period falls from roughly
+20--26 cycles to 6--7 cycles, so the valve or pump reacts sooner and uses fewer registers.
+
+\textbf{Datapath change.} No new state. The ALU's 8-bit ripple adder already computes
+\texttt{X + \textasciitilde Y + 1} for \texttt{SUB}; its carry-out is 1 exactly when \texttt{X}$\ge_u$\texttt{Y}. The carry is
+zero-extended (\texttt{\{0000000,CO\}}) and connected to input 3 of the ALU result 4:1 multiplexer. The decoder sets
+\texttt{AOP}=11 and \texttt{SB}=1 for opcode \hex{C}.
+
+\textbf{Pipeline timing and hazards.} It is an ordinary one-cycle EX operation: both sources are read in ID
+(\texttt{UA}=\texttt{UB}=1), forwarded in EX like \texttt{SUB}, and the result is ready at the end of EX. It can
+therefore be forwarded from EX/MEM to the very next instruction (for example the following \texttt{BEQZ}) with no stall.
+If the instruction just before it is a \texttt{LD} of one of its sources, the normal load-use interlock inserts exactly
+one bubble. This happens in the fill loop, where \texttt{LD R1,[WL]} is immediately followed by \texttt{SGEU R1,R4}.
+\texttt{SGEU} causes no control hazard. It writes \texttt{Rd} only in WB, gated by the valid bit like every other write.
+\end{document}

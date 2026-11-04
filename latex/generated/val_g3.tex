@@ -1,0 +1,5 @@
+3a & \texttt{ST} to RAM 00, 6F, 7F & RAM write-enable exactly 3 times & RAM\_WE at cyc 6 [00]$\leftarrow$5A, cyc 9 [6F]$\leftarrow$33, cyc 12 [7F]$\leftarrow$A5 & \pass \\ \hline
+3b & \texttt{ST 77} to 80, EF (reserved), FF (unimpl.), F0 (read-only) & no RAM write (no aliasing), no latch change & 4 stores seen on the bus, RAM\_WE during them: 0; ACT/DISPLAY unchanged & \pass \\ \hline
+3c & loads from 7F, 00, 6F after the reserved stores & R6=A5, R7=5A, R1=33 (unchanged) & R6=A5, R7=5A, R1=33 & \pass \\ \hline
+3d & loads from 80, EF (reserved) and F7 (unimplemented) & read as 00 & R0=00, R3=00, R5=00 & \pass \\ \hline
+3e & whole program vs. ISA reference model & identical write sequence & 31 writes, identical & \pass \\ \hline

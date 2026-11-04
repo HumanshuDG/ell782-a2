@@ -1,0 +1,89 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.5cm]{geometry}
+\input{common}
+\begin{document}
+\sloppy
+\begin{center}
+{\Large\textbf{Data Address Map, Peripheral Bit Fields and Timer Control}}\\[2pt]
+\project\ -- \course
+\end{center}
+
+\section*{1. Address map (one page summary)}
+\begin{center}
+\scriptsize\setlength{\tabcolsep}{3.5pt}\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{|l|l|c|c|p{9.6cm}|}
+\hline\rowcolor{black!8}
+\textbf{Address} & \textbf{Name} & \textbf{Access} & \textbf{Reset} & \textbf{Bit fields / behaviour}\\ \hline
+\hex{00}--\hex{7F} & RAM & R/W & undefined$^\dagger$ & 128$\times$8 data RAM (Logisim RAM, separate data-in/out). Write when
+  \texttt{WE}$\wedge\lnot$\texttt{A7}; asynchronous read. \\ \hline
+\hex{80}--\hex{EF} & reserved & -- & -- & Reads return \hex{00}; writes are ignored (no RAM aliasing: \texttt{A7}=1 blocks RAM \texttt{WE}). \\ \hline
+\hex{F0} & \texttt{IN\_STATUS} & R & live & b0 \texttt{START} \textbar\ b1 \texttt{DOOR\_CLOSED} \textbar\ b3:2 \texttt{MODE[1:0]} \textbar\
+  b4 \texttt{TRIP} (safety latch) \textbar\ b5 \texttt{ACTUAL\_MOTOR\_EN} \textbar\ b7:6 = 0. Writes ignored. \\ \hline
+\hex{F1} & \texttt{WATER\_LEVEL} & R & live & b7:0 unsigned water level. Writes ignored.\\ \hline
+\hex{F2} & \texttt{TEMP} & R & live & b7:0 temperature read-back (sensor only). Writes ignored.\\ \hline
+\hex{F3} & \texttt{DRUM\_RPM} & R & live & b7:0 drum-speed read-back (sensor only). Writes ignored.\\ \hline
+\hex{F4} & \texttt{ACT} (actuator latch) & R/W & \hex{00} & b0 \texttt{VALVE\_IN} \textbar\ b1 \texttt{HEATER} \textbar\
+  b2 \texttt{MOTOR\_EN} (request) \textbar\ b3 \texttt{PUMP\_OUT} \textbar\ b4 \texttt{MOTOR\_DIR} \textbar\ b5 \texttt{DOOR\_LOCK} \textbar\
+  b6 \texttt{BUZZER} \textbar\ b7 reserved (write ignored, reads 0). Read-back returns the latch.\\ \hline
+\hex{F5} & \texttt{DISPLAY} & R/W & \hex{00} & b7:0 status code / LED pattern, read-back returns the latch.\\ \hline
+\hex{F6}, \hex{F7} & unimplemented & -- & -- & read \hex{00}, writes ignored.\\ \hline
+\hex{F8} & \texttt{T\_COUNT} & R & \hex{00} & b7:0 current timer count. Writes ignored (cleared only via \texttt{T\_CTRL.CLR}).\\ \hline
+\hex{F9} & \texttt{T\_LIMIT} & R/W & \hex{00} & b7:0 compare value; \hex{00} disables comparison. Writing it never sets \texttt{MATCH} by itself.\\ \hline
+\hex{FA} & \texttt{T\_CTRL} & R/W & \hex{00} & b0 \texttt{EN} (R/W enable state) \textbar\ b1 \texttt{CLR} (write-1 command: clear \texttt{COUNT} and
+  \texttt{MATCH}; self-clearing, reads 0) \textbar\ b7:2 ignored, read 0. One store sets \texttt{EN}:=b0 and, if b1=1, clears.\\ \hline
+\hex{FB} & \texttt{T\_STATUS} & R & \hex{00} & b0 \texttt{MATCH} (sticky) \textbar\ b7:1 = 0. Writes ignored.\\ \hline
+\hex{FC}--\hex{FF} & unimplemented & -- & -- & read \hex{00}, writes ignored.\\ \hline
+\end{tabular}\\[2pt]
+{\scriptsize $^\dagger$RAM and \texttt{R0}--\texttt{R7} are not cleared by \texttt{RESET}; software initialises them before use
+(Logisim happens to power them up as 0).}
+\end{center}
+
+\section*{2. Bus timing and write rules}
+\begin{itemize}
+\item The MEM stage drives \texttt{D\_ADDR} = \texttt{EX/MEM.ALU} (the forwarded \texttt{Rs} value), \texttt{D\_WDATA} =
+  \texttt{EX/MEM.SDATA} (the forwarded \texttt{Rd} value) and the single write strobe
+  \texttt{D\_WE} = \texttt{EX/MEM.V}$\wedge$\texttt{EX/MEM.MW}. Every peripheral register and the RAM write on the global rising
+  clock edge that ends the MEM cycle, and only if \texttt{D\_WE}=1. Each instruction spends exactly one cycle in MEM, because
+  MEM is never stalled, so a store commits \emph{exactly once}. Squashed instructions and bubbles have \texttt{V}=0, so they
+  can never change RAM, actuators, display or timer.
+\item Decode: \texttt{IS\_RAM}=$\lnot$\texttt{A7}; \texttt{IS\_PER}=\texttt{A7}$\wedge$\texttt{A6}$\wedge$\texttt{A5}$\wedge$\texttt{A4};
+  a gate-level 4:16 decoder on \texttt{A3:0} gives \texttt{SEL\_Fx}=\texttt{IS\_PER}$\wedge$\texttt{dec[x]}.
+  Write enables: \texttt{RAM\_WE}=\texttt{D\_WE}$\wedge$\texttt{IS\_RAM}, \texttt{WE\_ACT}=\texttt{D\_WE}$\wedge$\texttt{SEL\_F4},
+  \texttt{WE\_DISP}=\texttt{D\_WE}$\wedge$\texttt{SEL\_F5}, \texttt{WE\_LIMIT}=\texttt{D\_WE}$\wedge$\texttt{SEL\_F9},
+  \texttt{WE\_CTRL}=\texttt{D\_WE}$\wedge$\texttt{SEL\_FA}. No other address has a write enable, so read-only, reserved and
+  unimplemented addresses ignore writes by construction.
+\item Read data = OR of 11 AND-gated sources (RAM, F0--F5, F8--FB). The selects are mutually exclusive, so an
+  address with no select returns \hex{00}. Reads have no side effects. A load samples the inputs combinationally and the value is
+  captured into \texttt{MEM/WB} at the edge ending its MEM cycle, so tests must hold inputs stable through that edge.
+\item \texttt{MODE} is snapshot by software: the program copies \texttt{IN\_STATUS[3:2]} from the same \texttt{LD} that saw
+  \texttt{START}$\wedge$\texttt{DOOR\_CLOSED} into RAM \hex{04} and register parameters, and never reads \texttt{MODE} again during a cycle.
+\end{itemize}
+
+\section*{3. Timer (\hex{F8}--\hex{FB})}
+Registers \texttt{COUNT}, \texttt{LIMIT}, \texttt{EN}, \texttt{MATCH} are clocked by the \emph{global} clock every rising
+edge and do not depend on CPU stall, flush or halt signals. \texttt{INC}=\texttt{COUNT}+1 comes from a gate-level
+half-adder chain. \texttt{CLRCMD}=\texttt{WE\_CTRL}$\wedge$\texttt{WDATA[1]}. At each rising edge:
+\begin{center}\small
+\begin{tabular}{l l}
+\texttt{EN}    & $\leftarrow$ \texttt{WDATA[0]} if \texttt{WE\_CTRL}, else unchanged\\
+\texttt{COUNT} & $\leftarrow$ 0 if \texttt{CLRCMD}; else \texttt{INC} if \texttt{EN}; else unchanged \qquad (clear has priority)\\
+\texttt{MATCH} & $\leftarrow$ 0 if \texttt{CLRCMD}; else \texttt{MATCH} $\vee$ (\texttt{EN} $\wedge$ \texttt{INC}=\texttt{LIMIT} $\wedge$ \texttt{LIMIT}$\neq$0)\\
+\texttt{LIMIT} & $\leftarrow$ \texttt{WDATA} if \texttt{WE\_LIMIT}, else unchanged\\
+\end{tabular}
+\end{center}
+\texttt{MATCH} is therefore set only by an enabled increment whose \emph{new} count equals a non-zero \texttt{LIMIT}, using
+the values held before the edge. It stays set until a clear. Writing \texttt{LIMIT} alone never sets it. \texttt{COUNT} wraps
+\hex{FF}$\rightarrow$\hex{00}. \texttt{RESET} (asynchronous register clear) gives \texttt{COUNT}=\texttt{LIMIT}=0,
+\texttt{EN}=\texttt{MATCH}=0.
+\textbf{Software recipes:} start/re-arm an interval of $N$ ticks: \texttt{ST N,[F9]} then \texttt{ST 0x03,[FA]} (clear +
+enable). \texttt{MATCH} becomes 1 on the $N$-th edge after the \texttt{CTRL} store. Pause: \texttt{ST 0x01/0x00,[FA]}.
+Stop and clear: \texttt{ST 0x02,[FA]}. Poll \texttt{LD Rx,[FB]}.
+
+\section*{4. Safety-gated outputs}
+\texttt{ActualMotorEnable} = \texttt{ACT[2]} $\wedge$ \texttt{DOOR\_CLOSED} $\wedge$ $\lnot$\texttt{TRIP}, computed by
+gates outside the CPU. It appears on the \texttt{MOTOR\_EN\_ACTUAL} pin and in \texttt{IN\_STATUS[5]}. The commanded request
+stays visible on \texttt{MOTOR\_EN}. \texttt{TRIP} (in \texttt{IN\_STATUS[4]}) is set at a clock edge where the door
+is sampled open while \texttt{ACT[2]}=1. It clears only at an edge with \texttt{ACT[2]}=0, \texttt{DOOR\_CLOSED}=1 and a
+new \texttt{START} 0$\rightarrow$1 transition (\texttt{START}$\wedge\lnot$\texttt{START\_prev}), or on \texttt{RESET}.
+All other actuator outputs equal their latch bits.
+\end{document}

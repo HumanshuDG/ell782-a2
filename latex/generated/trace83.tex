@@ -1,0 +1,7 @@
+12 & \texttt{0A ADD R1, R2} & \texttt{09 ADD R3, R1} & \bub{09 ADD R3, R1} & \texttt{08 LD R1, [R2]} & \texttt{07 SUB R3, R1} & 0 & 0 & -- & -- & R3$\leftarrow$F2 \\
+13 & \texttt{0B SUB R1, R3} & \texttt{0A ADD R1, R2} & \texttt{09 ADD R3, R1} & \bub{09 ADD R3, R1} & \texttt{08 LD R1, [R2]} & 0 & 0 & -- & MEM/WB & R1$\leftarrow$03 \\
+14 & \texttt{0C ST R1, [R4]} & \texttt{0B SUB R1, R3} & \texttt{0A ADD R1, R2} & \texttt{09 ADD R3, R1} & \bub{09 ADD R3, R1} & 0 & 0 & -- & -- & -- \\
+15 & \texttt{0D LD R5, [R4]} & \texttt{0C ST R1, [R4]} & \texttt{0B SUB R1, R3} & \texttt{0A ADD R1, R2} & \texttt{09 ADD R3, R1} & 0 & 0 & EX/MEM & MEM/WB & R3$\leftarrow$F5 \\
+16 & \texttt{0E LDI R7, 0xF5} & \texttt{0D LD R5, [R4]} & \texttt{0C ST R1, [R4]} & \texttt{0B SUB R1, R3} & \texttt{0A ADD R1, R2} & 0 & 0 & EX/MEM & -- & R1$\leftarrow$13 \\
+17 & \texttt{0F ST R5, [R7]} & \texttt{0E LDI R7, 0xF5} & \texttt{0D LD R5, [R4]} & \texttt{0C ST R1, [R4]} & \texttt{0B SUB R1, R3} & 0 & 0 & -- & -- & R1$\leftarrow$1E; RAM[20]$\leftarrow$1E \\
+18 & \texttt{10 HALT} & \texttt{0F ST R5, [R7]} & \texttt{0E LDI R7, 0xF5} & \texttt{0D LD R5, [R4]} & \texttt{0C ST R1, [R4]} & 0 & 0 & -- & -- & -- \\

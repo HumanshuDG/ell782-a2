@@ -1,0 +1,25 @@
+0 & \texttt{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & 0 & 0 & -- & -- & -- \\
+1 & \texttt{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & 0 & 0 & -- & -- & -- \\
+2 & \texttt{01 LDI R2, 0x10} & \texttt{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & 0 & 0 & -- & -- & -- \\
+3 & \texttt{02 LDI R3, 0x03} & \texttt{01 LDI R2, 0x10} & \texttt{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & 0 & 0 & -- & -- & -- \\
+4 & \texttt{03 LDI R4, 0x20} & \texttt{02 LDI R3, 0x03} & \texttt{01 LDI R2, 0x10} & \texttt{00 LDI R1, 0x01} & \bub{00 LDI R1, 0x01} & 0 & 0 & -- & -- & -- \\
+5 & \texttt{04 ST R3, [R2]} & \texttt{03 LDI R4, 0x20} & \texttt{02 LDI R3, 0x03} & \texttt{01 LDI R2, 0x10} & \texttt{00 LDI R1, 0x01} & 0 & 0 & -- & -- & R1$\leftarrow$01 \\
+6 & \texttt{05 NOP} & \texttt{04 ST R3, [R2]} & \texttt{03 LDI R4, 0x20} & \texttt{02 LDI R3, 0x03} & \texttt{01 LDI R2, 0x10} & 0 & 0 & -- & -- & R2$\leftarrow$10 \\
+7 & \texttt{06 ADD R1, R2} & \texttt{05 NOP} & \texttt{04 ST R3, [R2]} & \texttt{03 LDI R4, 0x20} & \texttt{02 LDI R3, 0x03} & 0 & 0 & MEM/WB & -- & R3$\leftarrow$03 \\
+8 & \texttt{07 SUB R3, R1} & \texttt{06 ADD R1, R2} & \texttt{05 NOP} & \texttt{04 ST R3, [R2]} & \texttt{03 LDI R4, 0x20} & 0 & 0 & -- & -- & R4$\leftarrow$20; RAM[10]$\leftarrow$03 \\
+9 & \texttt{08 LD R1, [R2]} & \texttt{07 SUB R3, R1} & \texttt{06 ADD R1, R2} & \texttt{05 NOP} & \texttt{04 ST R3, [R2]} & 0 & 0 & -- & -- & -- \\
+10 & \texttt{09 ADD R3, R1} & \texttt{08 LD R1, [R2]} & \texttt{07 SUB R3, R1} & \texttt{06 ADD R1, R2} & \texttt{05 NOP} & 0 & 0 & -- & EX/MEM & -- \\
+11 & \texttt{0A ADD R1, R2} & \texttt{09 ADD R3, R1} & \texttt{08 LD R1, [R2]} & \texttt{07 SUB R3, R1} & \texttt{06 ADD R1, R2} & \textbf{1} & 0 & -- & -- & R1$\leftarrow$11 \\
+12 & \texttt{0A ADD R1, R2} & \texttt{09 ADD R3, R1} & \bub{09 ADD R3, R1} & \texttt{08 LD R1, [R2]} & \texttt{07 SUB R3, R1} & 0 & 0 & -- & -- & R3$\leftarrow$F2 \\
+13 & \texttt{0B SUB R1, R3} & \texttt{0A ADD R1, R2} & \texttt{09 ADD R3, R1} & \bub{09 ADD R3, R1} & \texttt{08 LD R1, [R2]} & 0 & 0 & -- & MEM/WB & R1$\leftarrow$03 \\
+14 & \texttt{0C ST R1, [R4]} & \texttt{0B SUB R1, R3} & \texttt{0A ADD R1, R2} & \texttt{09 ADD R3, R1} & \bub{09 ADD R3, R1} & 0 & 0 & -- & -- & -- \\
+15 & \texttt{0D LD R5, [R4]} & \texttt{0C ST R1, [R4]} & \texttt{0B SUB R1, R3} & \texttt{0A ADD R1, R2} & \texttt{09 ADD R3, R1} & 0 & 0 & EX/MEM & MEM/WB & R3$\leftarrow$F5 \\
+16 & \texttt{0E LDI R7, 0xF5} & \texttt{0D LD R5, [R4]} & \texttt{0C ST R1, [R4]} & \texttt{0B SUB R1, R3} & \texttt{0A ADD R1, R2} & 0 & 0 & EX/MEM & -- & R1$\leftarrow$13 \\
+17 & \texttt{0F ST R5, [R7]} & \texttt{0E LDI R7, 0xF5} & \texttt{0D LD R5, [R4]} & \texttt{0C ST R1, [R4]} & \texttt{0B SUB R1, R3} & 0 & 0 & -- & -- & R1$\leftarrow$1E; RAM[20]$\leftarrow$1E \\
+18 & \texttt{10 HALT} & \texttt{0F ST R5, [R7]} & \texttt{0E LDI R7, 0xF5} & \texttt{0D LD R5, [R4]} & \texttt{0C ST R1, [R4]} & 0 & 0 & -- & -- & -- \\
+19 & \texttt{11 LDI R6, 0xFF} & \texttt{10 HALT} & \texttt{0F ST R5, [R7]} & \texttt{0E LDI R7, 0xF5} & \texttt{0D LD R5, [R4]} & 0 & 0 & MEM/WB & EX/MEM & R5$\leftarrow$1E \\
+20 & \texttt{12 ST R6, [R7]} & \texttt{11 LDI R6, 0xFF} & \texttt{10 HALT} & \texttt{0F ST R5, [R7]} & \texttt{0E LDI R7, 0xF5} & 0 & \textbf{1} & -- & -- & R7$\leftarrow$F5; DISPLAY$\leftarrow$1E \\
+21 & \textit{halted} & \bub{12 ST R6, [R7]} & \bub{11 LDI R6, 0xFF} & \texttt{10 HALT} & \texttt{0F ST R5, [R7]} & 0 & 0 & -- & -- & -- \\
+22 & \textit{halted} & \bub{12 ST R6, [R7]} & \bub{12 ST R6, [R7]} & \bub{11 LDI R6, 0xFF} & \texttt{10 HALT} & 0 & 0 & -- & -- & -- \\
+23 & \textit{halted} & \bub{12 ST R6, [R7]} & \bub{12 ST R6, [R7]} & \bub{12 ST R6, [R7]} & \bub{11 LDI R6, 0xFF} & 0 & 0 & -- & -- & -- \\
+24 & \textit{halted} & \bub{12 ST R6, [R7]} & \bub{12 ST R6, [R7]} & \bub{12 ST R6, [R7]} & \bub{12 ST R6, [R7]} & 0 & 0 & -- & -- & -- \\

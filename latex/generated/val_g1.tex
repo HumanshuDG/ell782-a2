@@ -1,0 +1,5 @@
+1a & \S8.1 \texttt{ADD R1,R2; SUB R3,R1}; R1=01, R2=10, R3=03 & no stall; SUB takes R1 from EX/MEM; R3=F2 & cyc 10: stall=0, FwdB=EX/MEM; R3=F2 (cyc 12) & \pass \\ \hline
+1b & \S8.2 \texttt{LD R1,[R2]; ADD R3,R1}; RAM[10]=03 & exactly 1 stall cycle; PC and IF/ID hold; bubble (V=0) in EX; R1 from MEM/WB; R3=F5 & stall cycles [11]; cyc 12: IDEX.V=0, PC held at 0A; cyc 13: FwdB=MEM/WB; R3=F5 & \pass \\ \hline
+1c & \S8.3 \texttt{ADD R1,R2; SUB R1,R3; ST R1,[R4]} & store data from youngest writer (SUB, EX/MEM) = 1E, not older ADD (MEM/WB) = 13 & cyc 16: FwdA=EX/MEM while MEM/WB holds pc 0A; RAM[20]$\leftarrow$1E (cyc 17) & \pass \\ \hline
+1d & read-back \texttt{LD R5,[R4]; ST R5,[DISPLAY]; HALT; LDI R6,FF} & DISPLAY=1E; HALT stops machine; younger LDI R6 never writes & DISPLAY=1E; HALTED=1; writes to R6: 0 & \pass \\ \hline
+1e & whole program vs. ISA reference model & identical ordered list of register/memory writes & 15 writes, identical & \pass \\ \hline

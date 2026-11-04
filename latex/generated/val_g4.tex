@@ -1,0 +1,6 @@
+4a & LIMIT=6, CTRL=03 (clear+enable) & COUNT=0 after the CTRL edge, +1 per clock; MATCH set on the edge where COUNT becomes 6 & CTRL write cyc 11; COUNT=00 at cyc 12; MATCH=1 at cyc 18 with COUNT=06 & \pass \\ \hline
+4b & polling loops \texttt{LD R2,[T\_STATUS]; BEQZ R2} (load-use stall) & COUNT increments during every stall cycle & stall cycles [16, 21, 31, 36, 41, 53]: COUNT +1 each & \pass \\ \hline
+4c & keep running after MATCH & MATCH stays 1 (sticky) while COUNT passes LIMIT & MATCH=1 from cyc 18 to 30, COUNT reached 12 & \pass \\ \hline
+4d & re-arm: LIMIT=0A, CTRL=03 & clear wins: COUNT=0, MATCH=0 on the CTRL edge; MATCH again at COUNT=0A & cyc 31: COUNT=00, MATCH=0; MATCH at cyc 41 (COUNT=0A) & \pass \\ \hline
+4e & timer stopped (CTRL=00), then LIMIT := current COUNT & no retroactive MATCH & cyc 57: COUNT=05, LIMIT=05, MATCH=0; DISPLAY(MATCH)=00 & \pass \\ \hline
+4f & LIMIT=03, CTRL=01 (enable, no clear), then \texttt{HALT} & timer keeps ticking while halted; COUNT wraps FF$\rightarrow$00; MATCH at COUNT=03 & wrap at cyc 315 (HALTED=1); MATCH at cyc 318 (COUNT=03) & \pass \\ \hline

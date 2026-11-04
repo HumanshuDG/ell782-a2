@@ -1,0 +1,129 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.5cm]{geometry}
+\input{common}
+\begin{document}
+\begin{center}
+{\Large\textbf{Validation Report (Section 11)}}\\[2pt]
+\project\ -- \course
+\end{center}
+
+\section{Method and reproducibility}
+\begin{itemize}
+\item \textbf{Device under test.} The six test benches \texttt{tests/t1}--\texttt{t6\_*.circ} each contain \emph{the same}
+  sub-circuits as \texttt{washing\_pipeline.circ} (\texttt{cpu}, \texttt{mmio}, \texttt{timer8}, \texttt{safety} and all gate-level
+  blocks). Only the top level differs. Its pieces are:
+  \begin{itemize}
+  \item the ROM holds the test program;
+  \item a power-on-reset flip-flop asserts \texttt{RESET} for cycle 0;
+  \item a 16-bit cycle counter drives a \emph{stimulus ROM} that supplies \texttt{START}, \texttt{DOOR\_CLOSED} and
+    \texttt{MODE} (the sensor values are listed below);
+  \item a small plant model supplies \texttt{WATER\_LEVEL} and \texttt{DRUM\_RPM}: water $+3$ every 16 cycles while
+    \texttt{VALVE\_IN}=1 and $-7$ (saturating at 0) every 16 cycles while \texttt{PUMP\_OUT}=1; drum 200~rpm while
+    \texttt{MOTOR\_EN\_ACTUAL}=1, otherwise $-40$ per cycle down to 0;
+  \item \texttt{TEMP} is the constant \hex{19};
+  \item an output pin \texttt{halt} stops the run after a fixed number of cycles.
+  \end{itemize}
+  Inputs change only right after a rising edge, so they are stable at every sampling edge.
+\item \textbf{Observation.} One row per clock cycle with 36 monitored signals: pipeline state, stall/flush, forwarding,
+  write-back and store ports, \texttt{RAM\_WE}, actuator latch, display, gated motor output, \texttt{TRIP}, timer
+  registers and sensor values. The \emph{observed} column below was extracted automatically by
+  \texttt{tools/make\_reports.py} from these rows. The rows were recorded by cycle-accurate simulation of the
+  test-bench \texttt{.circ} netlists with \texttt{tools/circsim.py}. That simulator rebuilds connectivity from the XML
+  geometry and also checks for width conflicts, multiple drivers, undriven nets and combinational loops (none found).
+\item \textbf{Reproducing in Logisim.} \texttt{java -jar logisim-generic-2.7.1.jar tests/t1\_hazards.circ -tty table > t1.txt},
+  then \texttt{diff t1.txt tests/expected/t1\_hazards.txt}; \texttt{tests/run\_logisim\_tests.sh} does this for all six. The same
+  files can also be opened in the GUI and clocked by hand (\texttt{RUNNING\_IN\_LOGISIM.md}).
+\item \textbf{Cross-checks.} For t1--t3 the ordered list of register write-backs and stores is compared with an
+  instruction-level reference model (\texttt{tools/isa\_ref.py}). In a strict mode in which every register and RAM byte starts
+  \emph{undefined}, the reference model also confirms that \texttt{program.asm} never reads uninitialised state
+  (normal path and safety-trip path).
+\end{itemize}
+
+\textbf{Result: \input{generated/summary}.}
+
+\section*{Sensor inputs used}
+\begin{center}\footnotesize
+\begin{tabular}{l l}
+\toprule
+Bench & Inputs (cycle numbers are rising-edge counts; values hold until the next change)\\
+\midrule
+t1--t4 & \texttt{DOOR\_CLOSED}=1, \texttt{START}=0, \texttt{MODE}=00, \texttt{WATER\_LEVEL}=0, \texttt{TEMP}=\hex{19}, \texttt{DRUM\_RPM}=0 (not used by the programs)\\
+t5 & \texttt{DOOR}: 1, 0 @40, 1 @52, 0 @88, 1 @108; \texttt{START}: 0, 1 @64, 0 @76, 1 @92, 0 @100, 1 @120, 0 @140\\
+t6 & \texttt{DOOR}=1; \texttt{START}: 1 @32, 0 @128, 1 @1600, 0 @1696; \texttt{MODE}: 00, 01 @480 (during run 1), 01 @1600, 00 @2400 (during run 2);\\
+   & \texttt{WATER\_LEVEL}/\texttt{DRUM\_RPM} from the plant model (fill reads \dots 96, 99, 102 and \dots 156, 159, 162)\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Group 1 -- ALU forwarding, load-use stall, youngest-writer priority (\texttt{t1\_hazards})}
+Initial state: all pipeline entries invalid after reset. Registers are initialised by the program
+(R1=01, R2=10, R3=03, R4=20, RAM[10]=03). Cycle traces are in \texttt{pipeline\_traces.pdf}.
+\begin{valtab}
+\input{generated/val_g1}
+\end{valtab}
+
+\section{Group 2 -- taken branch kills a wrong-path actuator store and a wrong-path HALT (\texttt{t2\_branch\_halt})}
+Initial state: reset. R2=\hex{21} (VALVE+LOCK pattern), R4=\hex{F4} (actuator latch), R3=07, R1=09.
+\begin{valtab}
+\input{generated/val_g2}
+\end{valtab}
+
+\section{Group 3 -- RAM store/load and reserved-address isolation (\texttt{t3\_ram\_reserved})}
+Initial state: reset. The program first writes RAM[00]=5A, RAM[6F]=33 and RAM[7F]=A5, then stores \hex{77} to addresses that would alias
+these locations if bit 7 were ignored (\hex{80}$\rightarrow$00, \hex{EF}$\rightarrow$6F, \hex{FF}$\rightarrow$7F) and to read-only
+\hex{F0}.
+\begin{valtab}
+\input{generated/val_g3}
+\end{valtab}
+
+\section{Group 4 -- timer (\texttt{t4\_timer})}
+Initial state: reset (\texttt{COUNT}=\texttt{LIMIT}=0, \texttt{EN}=\texttt{MATCH}=0).
+\begin{valtab}
+\input{generated/val_g4}
+\end{valtab}
+\begin{center}\footnotesize
+\input{generated/timer_trace}\\[2pt]
+Excerpt: interval 1 (stall cycles marked by \texttt{STALL}=1, the count still advances) and the wrap-around while halted.
+\end{center}
+
+\section{Group 5 -- safety interlock (\texttt{t5\_safety})}
+Initial state: reset (\texttt{TRIP}=0, \texttt{START\_PREV}=0). The program requests \texttt{MOTOR\_EN} and keeps the request
+until it sees a START press and release, then clears the request and waits for \texttt{TRIP}=0 before requesting
+the motor again. The physical output \texttt{MOTOR\_EN\_ACTUAL} is checked separately from the CPU request
+(\texttt{ACT} bit 2).
+\begin{valtab}
+\input{generated/val_g5}
+\end{valtab}
+\begin{center}\footnotesize
+\input{generated/safety_trace}\\[2pt]
+Every change of \texttt{DOOR}, \texttt{START}, \texttt{ACT}, actual motor enable or \texttt{TRIP}.
+\end{center}
+
+\section{Group 6 -- end-to-end wash, two MODE settings (\texttt{t6\_wash\_e2e}, \texttt{program.asm})}
+Initial state: reset, \texttt{DOOR\_CLOSED}=1, empty drum. Run 1 uses \texttt{MODE}=00 (NORMAL: target 100, wash 64, spin 32,
+drain $\le$10). Run 2 starts after run 1 has completed and the buzzer is on, with \texttt{MODE}=01 (HEAVY: 160, 96, 48, $\le$10).
+\texttt{MODE} is changed during both runs to show that the snapshot is used. The overshoot samples are 99$\rightarrow$102
+(target 100) and 159$\rightarrow$162 (target 160). The drain thresholds are also crossed by a jump (11$\rightarrow$4 and 15$\rightarrow$8).
+\begin{valtab}
+\input{generated/val_g6}
+\end{valtab}
+\begin{center}\footnotesize
+\input{generated/wash_timeline}\\[2pt]
+Phase timeline (cycle numbers) of both runs. DISPLAY sequence NORMAL 01, 02, 03, 04, 05, 06, 07, 08; HEAVY 12, 13, 14, 15, 16, 17, 18.
+\end{center}
+
+\appendix
+\section{Remaining test program listings}
+\textbf{t3\_ram\_reserved.asm}
+\begin{listtab}
+\input{generated/listing_t3}
+\end{listtab}
+\textbf{t4\_timer.asm}
+\begin{listtab}
+\input{generated/listing_t4}
+\end{listtab}
+\textbf{t5\_safety.asm}
+\begin{listtab}
+\input{generated/listing_t5}
+\end{listtab}
+\end{document}

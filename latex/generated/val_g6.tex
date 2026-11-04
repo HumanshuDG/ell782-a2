@@ -1,0 +1,11 @@
+6a & NORMAL (MODE=00): START=1, DOOR=1; plant +3 per 16 cycles & fill until WATER\_LEVEL $\geq$ 100 (unsigned) although reading jumps past 100 & last samples 99, 99, 99, 102; valve closed at cyc 619 with WATER\_LEVEL=102 & \pass \\ \hline
+6b & wash phase & LIMIT=64; motor direction alternates; motor off at MATCH & LIMIT=64; DIR changed 3 times; motor off at cyc 710 (COUNT=75, MATCH=1) & \pass \\ \hline
+6c & drain phase (plant $-7$ per 16 cycles) & pump until WATER\_LEVEL $\leq$ 10 (unsigned) & samples \dots 11, 11, 4; spin starts cyc 950 & \pass \\ \hline
+6d & spin phase & timer cleared/re-armed, LIMIT=32, MATCH at 32 & LIMIT=32, COUNT=2 at spin start, MATCH at cyc 980 (COUNT=32) & \pass \\ \hline
+6e & completion & all actuators off; unlock only after drum RPM=0; BUZZER=1; DISPLAY=08 & motor/pump off cyc 989; RPM=0 cyc 994; ACT=40 (unlock+buzzer) cyc 1004; DISPLAY=08 & \pass \\ \hline
+6g & HEAVY (MODE=01): START=1, DOOR=1; plant +3 per 16 cycles & fill until WATER\_LEVEL $\geq$ 160 (unsigned) although reading jumps past 160 & last samples 159, 159, 159, 162; valve closed at cyc 2507 with WATER\_LEVEL=162 & \pass \\ \hline
+6h & wash phase & LIMIT=96; motor direction alternates; motor off at MATCH & LIMIT=96; DIR changed 5 times; motor off at cyc 2626 (COUNT=103, MATCH=1) & \pass \\ \hline
+6i & drain phase (plant $-7$ per 16 cycles) & pump until WATER\_LEVEL $\leq$ 10 (unsigned) & samples \dots 15, 15, 8; spin starts cyc 2998 & \pass \\ \hline
+6j & spin phase & timer cleared/re-armed, LIMIT=48, MATCH at 48 & LIMIT=48, COUNT=2 at spin start, MATCH at cyc 3044 (COUNT=48) & \pass \\ \hline
+6k & completion & all actuators off; unlock only after drum RPM=0; BUZZER=1; DISPLAY=18 & motor/pump off cyc 3055; RPM=0 cyc 3060; ACT=40 (unlock+buzzer) cyc 3070; DISPLAY=18 & \pass \\ \hline
+6m & MODE changed during run 1 (cyc 480) and run 2 (cyc 2400) & parameters of the running cycle unchanged & run 1 still used target 100 / LIMIT 64 / 32; run 2 still used 160 / 96 / 48 (rows 6a--6k) & \pass \\ \hline

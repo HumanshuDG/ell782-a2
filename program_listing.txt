@@ -1,0 +1,181 @@
+ADDR  HEX   FMT  LABEL          ASSEMBLY                     ; COMMENT
+00    1000  I    reset:         LDI  R0, A_OFF               ; 
+01    1EF4  I                   LDI  R7, ACT                 ; 
+02    71C0  R                   ST   R0, [R7]                ; all actuator requests off, door unlocked
+03    1EFA  I                   LDI  R7, T_CTRL              ; 
+04    1202  I                   LDI  R1, 0x02                ; 
+05    73C0  R                   ST   R1, [R7]                ; timer: clear, disabled
+06    1EF5  I    idle:          LDI  R7, DISPLAY             ; 
+07    1201  I                   LDI  R1, 0x01                ; 
+08    73C0  R                   ST   R1, [R7]                ; DISPLAY = 01 (ready)
+09    1EF0  I    idle_wait:     LDI  R7, IN_STATUS           ; 
+0A    63C0  R    wait_start:    LD   R1, [R7]                ; one status snapshot
+0B    1403  I                   LDI  R2, 0x03                ; 
+0C    5440  R                   AND  R2, R1                  ; START & DOOR_CLOSED bits
+0D    84FD  I                   ADDI R2, -3                  ; 0 only if START=1 and DOOR_CLOSED=1
+0E    A40A  I                   BNEZ R2, wait_start          ; 
+0F    160C  I                   LDI  R3, 0x0C                ; 
+10    5640  R                   AND  R3, R1                  ; MODE<<2
+11    36C0  R                   ADD  R3, R3                  ; 
+12    36C0  R                   ADD  R3, R3                  ; MODE<<4  = display tag
+13    1E04  I                   LDI  R7, V_TAG               ; 
+14    77C0  R                   ST   R3, [R7]                ; RAM[4] = tag (MODE snapshot)
+15    1404  I                   LDI  R2, 0x04                ; 
+16    5440  R                   AND  R2, R1                  ; MODE[0]
+17    A41C  I                   BNEZ R2, heavy               ; 
+18    1864  I                   LDI  R4, 100                 ; NORMAL: fill target
+19    1A40  I                   LDI  R5, 64                  ; wash ticks
+1A    1C20  I                   LDI  R6, 32                  ; spin ticks
+1B    B01F  I                   JMP  save                    ; 
+1C    18A0  I    heavy:         LDI  R4, 160                 ; HEAVY : fill target
+1D    1A60  I                   LDI  R5, 96                  ; wash ticks
+1E    1C30  I                   LDI  R6, 48                  ; spin ticks
+1F    1E00  I    save:          LDI  R7, V_TARGET            ; 
+20    79C0  R                   ST   R4, [R7]                ; RAM[0] = target
+21    8E01  I                   ADDI R7, 1                   ; 
+22    7BC0  R                   ST   R5, [R7]                ; RAM[1] = wash
+23    8E01  I                   ADDI R7, 1                   ; 
+24    7DC0  R                   ST   R6, [R7]                ; RAM[2] = spin
+25    8E01  I                   ADDI R7, 1                   ; 
+26    180A  I                   LDI  R4, 10                  ; 
+27    79C0  R                   ST   R4, [R7]                ; RAM[3] = drain threshold
+28    1CF4  I                   LDI  R6, ACT                 ; R6 = actuator latch pointer (kept)
+29    1220  I                   LDI  R1, A_LOCK              ; 
+2A    7380  R                   ST   R1, [R6]                ; 
+2B    1EF5  I                   LDI  R7, DISPLAY             ; 
+2C    22C0  R                   MOV  R1, R3                  ; 
+2D    8202  I                   ADDI R1, 0x02                ; 
+2E    73C0  R                   ST   R1, [R7]                ; DISPLAY = tag|2
+2F    1EF0  I                   LDI  R7, IN_STATUS           ; 
+30    63C0  R                   LD   R1, [R7]                ; 
+31    1402  I                   LDI  R2, 0x02                ; 
+32    5440  R                   AND  R2, R1                  ; 
+33    94A0  I                   BEQZ R2, door_abort          ; lock request does not prove the door is shut
+34    1221  I                   LDI  R1, A_FILL              ; 
+35    7380  R                   ST   R1, [R6]                ; 
+36    1EF5  I                   LDI  R7, DISPLAY             ; 
+37    22C0  R                   MOV  R1, R3                  ; 
+38    8203  I                   ADDI R1, 0x03                ; 
+39    73C0  R                   ST   R1, [R7]                ; DISPLAY = tag|3
+3A    1E00  I                   LDI  R7, V_TARGET            ; 
+3B    69C0  R                   LD   R4, [R7]                ; R4 = target
+3C    1EF1  I                   LDI  R7, WATER_LEVEL         ; 
+3D    63C0  R    fill:          LD   R1, [R7]                ; 
+3E    C300  R                   SGEU R1, R4                  ; R1 = (WATER_LEVEL >= target)
+3F    923D  I                   BEQZ R1, fill                ; 
+40    1220  I                   LDI  R1, A_LOCK              ; 
+41    7380  R                   ST   R1, [R6]                ; close valve
+42    1EF5  I                   LDI  R7, DISPLAY             ; 
+43    22C0  R                   MOV  R1, R3                  ; 
+44    8204  I                   ADDI R1, 0x04                ; 
+45    73C0  R                   ST   R1, [R7]                ; DISPLAY = tag|4
+46    1EF2  I                   LDI  R7, TEMP                ; 
+47    63C0  R                   LD   R1, [R7]                ; 
+48    1E05  I                   LDI  R7, V_TEMP              ; 
+49    73C0  R                   ST   R1, [R7]                ; log temperature (sensor read-back only)
+4A    1E01  I                   LDI  R7, V_WASH              ; 
+4B    6BC0  R                   LD   R5, [R7]                ; 
+4C    1EF9  I                   LDI  R7, T_LIMIT             ; 
+4D    7BC0  R                   ST   R5, [R7]                ; LIMIT = wash ticks
+4E    1EFA  I                   LDI  R7, T_CTRL              ; 
+4F    1203  I                   LDI  R1, 0x03                ; 
+50    73C0  R                   ST   R1, [R7]                ; clear COUNT/MATCH and enable
+51    10F0  I                   LDI  R0, IN_STATUS           ; 
+52    1410  I                   LDI  R2, 0x10                ; COUNT bit4 -> MOTOR_DIR (toggles every 16 ticks)
+53    1624  I                   LDI  R3, A_WASH              ; 
+54    1810  I                   LDI  R4, 0x10                ; TRIP bit mask
+55    1AF8  I                   LDI  R5, T_COUNT             ; 
+56    1EFB  I                   LDI  R7, T_STATUS            ; 
+57    6340  R    wash:          LD   R1, [R5]                ; 
+58    5280  R                   AND  R1, R2                  ; 
+59    32C0  R                   ADD  R1, R3                  ; LOCK | MOTOR_EN | DIR
+5A    7380  R                   ST   R1, [R6]                ; 
+5B    6200  R                   LD   R1, [R0]                ; 
+5C    5300  R                   AND  R1, R4                  ; 
+5D    A2A6  I                   BNEZ R1, trip_fault          ; hardware interlock tripped
+5E    63C0  R                   LD   R1, [R7]                ; 
+5F    9257  I                   BEQZ R1, wash                ; until MATCH
+60    1220  I                   LDI  R1, A_LOCK              ; 
+61    7380  R                   ST   R1, [R6]                ; stop motor
+62    1228  I                   LDI  R1, A_DRAIN             ; 
+63    7380  R                   ST   R1, [R6]                ; 
+64    1E04  I                   LDI  R7, V_TAG               ; 
+65    63C0  R                   LD   R1, [R7]                ; 
+66    8205  I                   ADDI R1, 0x05                ; 
+67    1EF5  I                   LDI  R7, DISPLAY             ; 
+68    73C0  R                   ST   R1, [R7]                ; DISPLAY = tag|5
+69    1E03  I                   LDI  R7, V_DRAIN             ; 
+6A    69C0  R                   LD   R4, [R7]                ; R4 = threshold
+6B    1EF1  I                   LDI  R7, WATER_LEVEL         ; 
+6C    63C0  R    drain:         LD   R1, [R7]                ; 
+6D    2500  R                   MOV  R2, R4                  ; 
+6E    C440  R                   SGEU R2, R1                  ; R2 = (threshold >= WATER_LEVEL)
+6F    946C  I                   BEQZ R2, drain               ; 
+70    1E04  I                   LDI  R7, V_TAG               ; 
+71    63C0  R                   LD   R1, [R7]                ; 
+72    8206  I                   ADDI R1, 0x06                ; 
+73    1EF5  I                   LDI  R7, DISPLAY             ; 
+74    73C0  R                   ST   R1, [R7]                ; DISPLAY = tag|6
+75    1E02  I                   LDI  R7, V_SPIN              ; 
+76    6BC0  R                   LD   R5, [R7]                ; 
+77    1EF9  I                   LDI  R7, T_LIMIT             ; 
+78    7BC0  R                   ST   R5, [R7]                ; LIMIT = spin ticks
+79    1EFA  I                   LDI  R7, T_CTRL              ; 
+7A    1203  I                   LDI  R1, 0x03                ; 
+7B    73C0  R                   ST   R1, [R7]                ; clear + re-arm
+7C    122C  I                   LDI  R1, A_SPIN              ; 
+7D    7380  R                   ST   R1, [R6]                ; 
+7E    10F0  I                   LDI  R0, IN_STATUS           ; 
+7F    1810  I                   LDI  R4, 0x10                ; 
+80    1EFB  I                   LDI  R7, T_STATUS            ; 
+81    6200  R    spin:          LD   R1, [R0]                ; 
+82    5300  R                   AND  R1, R4                  ; 
+83    A2A6  I                   BNEZ R1, trip_fault          ; 
+84    63C0  R                   LD   R1, [R7]                ; 
+85    9281  I                   BEQZ R1, spin                ; 
+86    1220  I                   LDI  R1, A_LOCK              ; 
+87    7380  R                   ST   R1, [R6]                ; motor + pump off, door still locked
+88    1EFA  I                   LDI  R7, T_CTRL              ; 
+89    1202  I                   LDI  R1, 0x02                ; 
+8A    73C0  R                   ST   R1, [R7]                ; stop + clear timer
+8B    1E04  I                   LDI  R7, V_TAG               ; 
+8C    63C0  R                   LD   R1, [R7]                ; 
+8D    8207  I                   ADDI R1, 0x07                ; 
+8E    1EF5  I                   LDI  R7, DISPLAY             ; 
+8F    73C0  R                   ST   R1, [R7]                ; DISPLAY = tag|7
+90    1EF3  I                   LDI  R7, DRUM_RPM            ; 
+91    63C0  R    wait_drum:     LD   R1, [R7]                ; 
+92    A291  I                   BNEZ R1, wait_drum           ; unlock only after the drum has stopped
+93    1240  I                   LDI  R1, A_DONE              ; 
+94    7380  R                   ST   R1, [R6]                ; BUZZER on, DOOR_LOCK off
+95    1E04  I                   LDI  R7, V_TAG               ; 
+96    63C0  R                   LD   R1, [R7]                ; 
+97    8208  I                   ADDI R1, 0x08                ; 
+98    1EF5  I                   LDI  R7, DISPLAY             ; 
+99    73C0  R                   ST   R1, [R7]                ; DISPLAY = tag|8 (done)
+9A    1EF0  I    release:       LDI  R7, IN_STATUS           ; 
+9B    63C0  R    wait_rel:      LD   R1, [R7]                ; 
+9C    1401  I                   LDI  R2, 0x01                ; 
+9D    5440  R                   AND  R2, R1                  ; 
+9E    A49B  I                   BNEZ R2, wait_rel            ; wait until START is released
+9F    B009  I                   JMP  idle_wait               ; buzzer stays on until the next START
+A0    1200  I    door_abort:    LDI  R1, A_OFF               ; 
+A1    7380  R                   ST   R1, [R6]                ; unlock, everything off
+A2    1EF5  I                   LDI  R7, DISPLAY             ; 
+A3    12E1  I                   LDI  R1, 0xE1                ; 
+A4    73C0  R                   ST   R1, [R7]                ; 
+A5    B09A  I                   JMP  release                 ; 
+A6    1200  I    trip_fault:    LDI  R1, A_OFF               ; 
+A7    7380  R                   ST   R1, [R6]                ; software clears MOTOR_EN request (needed for re-arm)
+A8    1EFA  I                   LDI  R7, T_CTRL              ; 
+A9    1202  I                   LDI  R1, 0x02                ; 
+AA    73C0  R                   ST   R1, [R7]                ; stop timer
+AB    1EF5  I                   LDI  R7, DISPLAY             ; 
+AC    12EE  I                   LDI  R1, 0xEE                ; 
+AD    73C0  R                   ST   R1, [R7]                ; 
+AE    1EF0  I                   LDI  R7, IN_STATUS           ; 
+AF    1810  I                   LDI  R4, 0x10                ; 
+B0    63C0  R    wait_rearm:    LD   R1, [R7]                ; 
+B1    5300  R                   AND  R1, R4                  ; 
+B2    A2B0  I                   BNEZ R1, wait_rearm          ; TRIP clears only after door closed + new START edge
+B3    B009  I                   JMP  idle_wait               ; re-armed: START is held, a fresh cycle begins

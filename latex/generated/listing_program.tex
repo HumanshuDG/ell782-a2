@@ -1,0 +1,180 @@
+\texttt{00} & \texttt{1000} & I & \texttt{reset} & \texttt{LDI  R0, A\_OFF} & {\footnotesize } \\
+\texttt{01} & \texttt{1EF4} & I & \texttt{} & \texttt{LDI  R7, ACT} & {\footnotesize } \\
+\texttt{02} & \texttt{71C0} & R & \texttt{} & \texttt{ST   R0, [R7]} & {\footnotesize all actuator requests off, door unlocked} \\
+\texttt{03} & \texttt{1EFA} & I & \texttt{} & \texttt{LDI  R7, T\_CTRL} & {\footnotesize } \\
+\texttt{04} & \texttt{1202} & I & \texttt{} & \texttt{LDI  R1, 0x02} & {\footnotesize } \\
+\texttt{05} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize timer: clear, disabled} \\
+\texttt{06} & \texttt{1EF5} & I & \texttt{idle} & \texttt{LDI  R7, DISPLAY} & {\footnotesize } \\
+\texttt{07} & \texttt{1201} & I & \texttt{} & \texttt{LDI  R1, 0x01} & {\footnotesize } \\
+\texttt{08} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize DISPLAY = 01 (ready)} \\
+\texttt{09} & \texttt{1EF0} & I & \texttt{idle\_wait} & \texttt{LDI  R7, IN\_STATUS} & {\footnotesize } \\
+\texttt{0A} & \texttt{63C0} & R & \texttt{wait\_start} & \texttt{LD   R1, [R7]} & {\footnotesize one status snapshot} \\
+\texttt{0B} & \texttt{1403} & I & \texttt{} & \texttt{LDI  R2, 0x03} & {\footnotesize } \\
+\texttt{0C} & \texttt{5440} & R & \texttt{} & \texttt{AND  R2, R1} & {\footnotesize START \& DOOR\_CLOSED bits} \\
+\texttt{0D} & \texttt{84FD} & I & \texttt{} & \texttt{ADDI R2, -3} & {\footnotesize 0 only if START=1 and DOOR\_CLOSED=1} \\
+\texttt{0E} & \texttt{A40A} & I & \texttt{} & \texttt{BNEZ R2, wait\_start} & {\footnotesize } \\
+\texttt{0F} & \texttt{160C} & I & \texttt{} & \texttt{LDI  R3, 0x0C} & {\footnotesize } \\
+\texttt{10} & \texttt{5640} & R & \texttt{} & \texttt{AND  R3, R1} & {\footnotesize MODE$<$$<$2} \\
+\texttt{11} & \texttt{36C0} & R & \texttt{} & \texttt{ADD  R3, R3} & {\footnotesize } \\
+\texttt{12} & \texttt{36C0} & R & \texttt{} & \texttt{ADD  R3, R3} & {\footnotesize MODE$<$$<$4  = display tag} \\
+\texttt{13} & \texttt{1E04} & I & \texttt{} & \texttt{LDI  R7, V\_TAG} & {\footnotesize } \\
+\texttt{14} & \texttt{77C0} & R & \texttt{} & \texttt{ST   R3, [R7]} & {\footnotesize RAM[4] = tag (MODE snapshot)} \\
+\texttt{15} & \texttt{1404} & I & \texttt{} & \texttt{LDI  R2, 0x04} & {\footnotesize } \\
+\texttt{16} & \texttt{5440} & R & \texttt{} & \texttt{AND  R2, R1} & {\footnotesize MODE[0]} \\
+\texttt{17} & \texttt{A41C} & I & \texttt{} & \texttt{BNEZ R2, heavy} & {\footnotesize } \\
+\texttt{18} & \texttt{1864} & I & \texttt{} & \texttt{LDI  R4, 100} & {\footnotesize NORMAL: fill target} \\
+\texttt{19} & \texttt{1A40} & I & \texttt{} & \texttt{LDI  R5, 64} & {\footnotesize wash ticks} \\
+\texttt{1A} & \texttt{1C20} & I & \texttt{} & \texttt{LDI  R6, 32} & {\footnotesize spin ticks} \\
+\texttt{1B} & \texttt{B01F} & I & \texttt{} & \texttt{JMP  save} & {\footnotesize } \\
+\texttt{1C} & \texttt{18A0} & I & \texttt{heavy} & \texttt{LDI  R4, 160} & {\footnotesize HEAVY : fill target} \\
+\texttt{1D} & \texttt{1A60} & I & \texttt{} & \texttt{LDI  R5, 96} & {\footnotesize wash ticks} \\
+\texttt{1E} & \texttt{1C30} & I & \texttt{} & \texttt{LDI  R6, 48} & {\footnotesize spin ticks} \\
+\texttt{1F} & \texttt{1E00} & I & \texttt{save} & \texttt{LDI  R7, V\_TARGET} & {\footnotesize } \\
+\texttt{20} & \texttt{79C0} & R & \texttt{} & \texttt{ST   R4, [R7]} & {\footnotesize RAM[0] = target} \\
+\texttt{21} & \texttt{8E01} & I & \texttt{} & \texttt{ADDI R7, 1} & {\footnotesize } \\
+\texttt{22} & \texttt{7BC0} & R & \texttt{} & \texttt{ST   R5, [R7]} & {\footnotesize RAM[1] = wash} \\
+\texttt{23} & \texttt{8E01} & I & \texttt{} & \texttt{ADDI R7, 1} & {\footnotesize } \\
+\texttt{24} & \texttt{7DC0} & R & \texttt{} & \texttt{ST   R6, [R7]} & {\footnotesize RAM[2] = spin} \\
+\texttt{25} & \texttt{8E01} & I & \texttt{} & \texttt{ADDI R7, 1} & {\footnotesize } \\
+\texttt{26} & \texttt{180A} & I & \texttt{} & \texttt{LDI  R4, 10} & {\footnotesize } \\
+\texttt{27} & \texttt{79C0} & R & \texttt{} & \texttt{ST   R4, [R7]} & {\footnotesize RAM[3] = drain threshold} \\
+\texttt{28} & \texttt{1CF4} & I & \texttt{} & \texttt{LDI  R6, ACT} & {\footnotesize R6 = actuator latch pointer (kept)} \\
+\texttt{29} & \texttt{1220} & I & \texttt{} & \texttt{LDI  R1, A\_LOCK} & {\footnotesize } \\
+\texttt{2A} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize } \\
+\texttt{2B} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, DISPLAY} & {\footnotesize } \\
+\texttt{2C} & \texttt{22C0} & R & \texttt{} & \texttt{MOV  R1, R3} & {\footnotesize } \\
+\texttt{2D} & \texttt{8202} & I & \texttt{} & \texttt{ADDI R1, 0x02} & {\footnotesize } \\
+\texttt{2E} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize DISPLAY = tag|2} \\
+\texttt{2F} & \texttt{1EF0} & I & \texttt{} & \texttt{LDI  R7, IN\_STATUS} & {\footnotesize } \\
+\texttt{30} & \texttt{63C0} & R & \texttt{} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{31} & \texttt{1402} & I & \texttt{} & \texttt{LDI  R2, 0x02} & {\footnotesize } \\
+\texttt{32} & \texttt{5440} & R & \texttt{} & \texttt{AND  R2, R1} & {\footnotesize } \\
+\texttt{33} & \texttt{94A0} & I & \texttt{} & \texttt{BEQZ R2, door\_abort} & {\footnotesize lock request does not prove the door is shut} \\
+\texttt{34} & \texttt{1221} & I & \texttt{} & \texttt{LDI  R1, A\_FILL} & {\footnotesize } \\
+\texttt{35} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize } \\
+\texttt{36} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, DISPLAY} & {\footnotesize } \\
+\texttt{37} & \texttt{22C0} & R & \texttt{} & \texttt{MOV  R1, R3} & {\footnotesize } \\
+\texttt{38} & \texttt{8203} & I & \texttt{} & \texttt{ADDI R1, 0x03} & {\footnotesize } \\
+\texttt{39} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize DISPLAY = tag|3} \\
+\texttt{3A} & \texttt{1E00} & I & \texttt{} & \texttt{LDI  R7, V\_TARGET} & {\footnotesize } \\
+\texttt{3B} & \texttt{69C0} & R & \texttt{} & \texttt{LD   R4, [R7]} & {\footnotesize R4 = target} \\
+\texttt{3C} & \texttt{1EF1} & I & \texttt{} & \texttt{LDI  R7, WATER\_LEVEL} & {\footnotesize } \\
+\texttt{3D} & \texttt{63C0} & R & \texttt{fill} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{3E} & \texttt{C300} & R & \texttt{} & \texttt{SGEU R1, R4} & {\footnotesize R1 = (WATER\_LEVEL $>$= target)} \\
+\texttt{3F} & \texttt{923D} & I & \texttt{} & \texttt{BEQZ R1, fill} & {\footnotesize } \\
+\texttt{40} & \texttt{1220} & I & \texttt{} & \texttt{LDI  R1, A\_LOCK} & {\footnotesize } \\
+\texttt{41} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize close valve} \\
+\texttt{42} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, DISPLAY} & {\footnotesize } \\
+\texttt{43} & \texttt{22C0} & R & \texttt{} & \texttt{MOV  R1, R3} & {\footnotesize } \\
+\texttt{44} & \texttt{8204} & I & \texttt{} & \texttt{ADDI R1, 0x04} & {\footnotesize } \\
+\texttt{45} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize DISPLAY = tag|4} \\
+\texttt{46} & \texttt{1EF2} & I & \texttt{} & \texttt{LDI  R7, TEMP} & {\footnotesize } \\
+\texttt{47} & \texttt{63C0} & R & \texttt{} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{48} & \texttt{1E05} & I & \texttt{} & \texttt{LDI  R7, V\_TEMP} & {\footnotesize } \\
+\texttt{49} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize log temperature (sensor read-back only)} \\
+\texttt{4A} & \texttt{1E01} & I & \texttt{} & \texttt{LDI  R7, V\_WASH} & {\footnotesize } \\
+\texttt{4B} & \texttt{6BC0} & R & \texttt{} & \texttt{LD   R5, [R7]} & {\footnotesize } \\
+\texttt{4C} & \texttt{1EF9} & I & \texttt{} & \texttt{LDI  R7, T\_LIMIT} & {\footnotesize } \\
+\texttt{4D} & \texttt{7BC0} & R & \texttt{} & \texttt{ST   R5, [R7]} & {\footnotesize LIMIT = wash ticks} \\
+\texttt{4E} & \texttt{1EFA} & I & \texttt{} & \texttt{LDI  R7, T\_CTRL} & {\footnotesize } \\
+\texttt{4F} & \texttt{1203} & I & \texttt{} & \texttt{LDI  R1, 0x03} & {\footnotesize } \\
+\texttt{50} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize clear COUNT/MATCH and enable} \\
+\texttt{51} & \texttt{10F0} & I & \texttt{} & \texttt{LDI  R0, IN\_STATUS} & {\footnotesize } \\
+\texttt{52} & \texttt{1410} & I & \texttt{} & \texttt{LDI  R2, 0x10} & {\footnotesize COUNT bit4 -$>$ MOTOR\_DIR (toggles every 16 ticks)} \\
+\texttt{53} & \texttt{1624} & I & \texttt{} & \texttt{LDI  R3, A\_WASH} & {\footnotesize } \\
+\texttt{54} & \texttt{1810} & I & \texttt{} & \texttt{LDI  R4, 0x10} & {\footnotesize TRIP bit mask} \\
+\texttt{55} & \texttt{1AF8} & I & \texttt{} & \texttt{LDI  R5, T\_COUNT} & {\footnotesize } \\
+\texttt{56} & \texttt{1EFB} & I & \texttt{} & \texttt{LDI  R7, T\_STATUS} & {\footnotesize } \\
+\texttt{57} & \texttt{6340} & R & \texttt{wash} & \texttt{LD   R1, [R5]} & {\footnotesize } \\
+\texttt{58} & \texttt{5280} & R & \texttt{} & \texttt{AND  R1, R2} & {\footnotesize } \\
+\texttt{59} & \texttt{32C0} & R & \texttt{} & \texttt{ADD  R1, R3} & {\footnotesize LOCK | MOTOR\_EN | DIR} \\
+\texttt{5A} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize } \\
+\texttt{5B} & \texttt{6200} & R & \texttt{} & \texttt{LD   R1, [R0]} & {\footnotesize } \\
+\texttt{5C} & \texttt{5300} & R & \texttt{} & \texttt{AND  R1, R4} & {\footnotesize } \\
+\texttt{5D} & \texttt{A2A6} & I & \texttt{} & \texttt{BNEZ R1, trip\_fault} & {\footnotesize hardware interlock tripped} \\
+\texttt{5E} & \texttt{63C0} & R & \texttt{} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{5F} & \texttt{9257} & I & \texttt{} & \texttt{BEQZ R1, wash} & {\footnotesize until MATCH} \\
+\texttt{60} & \texttt{1220} & I & \texttt{} & \texttt{LDI  R1, A\_LOCK} & {\footnotesize } \\
+\texttt{61} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize stop motor} \\
+\texttt{62} & \texttt{1228} & I & \texttt{} & \texttt{LDI  R1, A\_DRAIN} & {\footnotesize } \\
+\texttt{63} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize } \\
+\texttt{64} & \texttt{1E04} & I & \texttt{} & \texttt{LDI  R7, V\_TAG} & {\footnotesize } \\
+\texttt{65} & \texttt{63C0} & R & \texttt{} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{66} & \texttt{8205} & I & \texttt{} & \texttt{ADDI R1, 0x05} & {\footnotesize } \\
+\texttt{67} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, DISPLAY} & {\footnotesize } \\
+\texttt{68} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize DISPLAY = tag|5} \\
+\texttt{69} & \texttt{1E03} & I & \texttt{} & \texttt{LDI  R7, V\_DRAIN} & {\footnotesize } \\
+\texttt{6A} & \texttt{69C0} & R & \texttt{} & \texttt{LD   R4, [R7]} & {\footnotesize R4 = threshold} \\
+\texttt{6B} & \texttt{1EF1} & I & \texttt{} & \texttt{LDI  R7, WATER\_LEVEL} & {\footnotesize } \\
+\texttt{6C} & \texttt{63C0} & R & \texttt{drain} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{6D} & \texttt{2500} & R & \texttt{} & \texttt{MOV  R2, R4} & {\footnotesize } \\
+\texttt{6E} & \texttt{C440} & R & \texttt{} & \texttt{SGEU R2, R1} & {\footnotesize R2 = (threshold $>$= WATER\_LEVEL)} \\
+\texttt{6F} & \texttt{946C} & I & \texttt{} & \texttt{BEQZ R2, drain} & {\footnotesize } \\
+\texttt{70} & \texttt{1E04} & I & \texttt{} & \texttt{LDI  R7, V\_TAG} & {\footnotesize } \\
+\texttt{71} & \texttt{63C0} & R & \texttt{} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{72} & \texttt{8206} & I & \texttt{} & \texttt{ADDI R1, 0x06} & {\footnotesize } \\
+\texttt{73} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, DISPLAY} & {\footnotesize } \\
+\texttt{74} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize DISPLAY = tag|6} \\
+\texttt{75} & \texttt{1E02} & I & \texttt{} & \texttt{LDI  R7, V\_SPIN} & {\footnotesize } \\
+\texttt{76} & \texttt{6BC0} & R & \texttt{} & \texttt{LD   R5, [R7]} & {\footnotesize } \\
+\texttt{77} & \texttt{1EF9} & I & \texttt{} & \texttt{LDI  R7, T\_LIMIT} & {\footnotesize } \\
+\texttt{78} & \texttt{7BC0} & R & \texttt{} & \texttt{ST   R5, [R7]} & {\footnotesize LIMIT = spin ticks} \\
+\texttt{79} & \texttt{1EFA} & I & \texttt{} & \texttt{LDI  R7, T\_CTRL} & {\footnotesize } \\
+\texttt{7A} & \texttt{1203} & I & \texttt{} & \texttt{LDI  R1, 0x03} & {\footnotesize } \\
+\texttt{7B} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize clear + re-arm} \\
+\texttt{7C} & \texttt{122C} & I & \texttt{} & \texttt{LDI  R1, A\_SPIN} & {\footnotesize } \\
+\texttt{7D} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize } \\
+\texttt{7E} & \texttt{10F0} & I & \texttt{} & \texttt{LDI  R0, IN\_STATUS} & {\footnotesize } \\
+\texttt{7F} & \texttt{1810} & I & \texttt{} & \texttt{LDI  R4, 0x10} & {\footnotesize } \\
+\texttt{80} & \texttt{1EFB} & I & \texttt{} & \texttt{LDI  R7, T\_STATUS} & {\footnotesize } \\
+\texttt{81} & \texttt{6200} & R & \texttt{spin} & \texttt{LD   R1, [R0]} & {\footnotesize } \\
+\texttt{82} & \texttt{5300} & R & \texttt{} & \texttt{AND  R1, R4} & {\footnotesize } \\
+\texttt{83} & \texttt{A2A6} & I & \texttt{} & \texttt{BNEZ R1, trip\_fault} & {\footnotesize } \\
+\texttt{84} & \texttt{63C0} & R & \texttt{} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{85} & \texttt{9281} & I & \texttt{} & \texttt{BEQZ R1, spin} & {\footnotesize } \\
+\texttt{86} & \texttt{1220} & I & \texttt{} & \texttt{LDI  R1, A\_LOCK} & {\footnotesize } \\
+\texttt{87} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize motor + pump off, door still locked} \\
+\texttt{88} & \texttt{1EFA} & I & \texttt{} & \texttt{LDI  R7, T\_CTRL} & {\footnotesize } \\
+\texttt{89} & \texttt{1202} & I & \texttt{} & \texttt{LDI  R1, 0x02} & {\footnotesize } \\
+\texttt{8A} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize stop + clear timer} \\
+\texttt{8B} & \texttt{1E04} & I & \texttt{} & \texttt{LDI  R7, V\_TAG} & {\footnotesize } \\
+\texttt{8C} & \texttt{63C0} & R & \texttt{} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{8D} & \texttt{8207} & I & \texttt{} & \texttt{ADDI R1, 0x07} & {\footnotesize } \\
+\texttt{8E} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, DISPLAY} & {\footnotesize } \\
+\texttt{8F} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize DISPLAY = tag|7} \\
+\texttt{90} & \texttt{1EF3} & I & \texttt{} & \texttt{LDI  R7, DRUM\_RPM} & {\footnotesize } \\
+\texttt{91} & \texttt{63C0} & R & \texttt{wait\_drum} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{92} & \texttt{A291} & I & \texttt{} & \texttt{BNEZ R1, wait\_drum} & {\footnotesize unlock only after the drum has stopped} \\
+\texttt{93} & \texttt{1240} & I & \texttt{} & \texttt{LDI  R1, A\_DONE} & {\footnotesize } \\
+\texttt{94} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize BUZZER on, DOOR\_LOCK off} \\
+\texttt{95} & \texttt{1E04} & I & \texttt{} & \texttt{LDI  R7, V\_TAG} & {\footnotesize } \\
+\texttt{96} & \texttt{63C0} & R & \texttt{} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{97} & \texttt{8208} & I & \texttt{} & \texttt{ADDI R1, 0x08} & {\footnotesize } \\
+\texttt{98} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, DISPLAY} & {\footnotesize } \\
+\texttt{99} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize DISPLAY = tag|8 (done)} \\
+\texttt{9A} & \texttt{1EF0} & I & \texttt{release} & \texttt{LDI  R7, IN\_STATUS} & {\footnotesize } \\
+\texttt{9B} & \texttt{63C0} & R & \texttt{wait\_rel} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{9C} & \texttt{1401} & I & \texttt{} & \texttt{LDI  R2, 0x01} & {\footnotesize } \\
+\texttt{9D} & \texttt{5440} & R & \texttt{} & \texttt{AND  R2, R1} & {\footnotesize } \\
+\texttt{9E} & \texttt{A49B} & I & \texttt{} & \texttt{BNEZ R2, wait\_rel} & {\footnotesize wait until START is released} \\
+\texttt{9F} & \texttt{B009} & I & \texttt{} & \texttt{JMP  idle\_wait} & {\footnotesize buzzer stays on until the next START} \\
+\texttt{A0} & \texttt{1200} & I & \texttt{door\_abort} & \texttt{LDI  R1, A\_OFF} & {\footnotesize } \\
+\texttt{A1} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize unlock, everything off} \\
+\texttt{A2} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, DISPLAY} & {\footnotesize } \\
+\texttt{A3} & \texttt{12E1} & I & \texttt{} & \texttt{LDI  R1, 0xE1} & {\footnotesize } \\
+\texttt{A4} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize } \\
+\texttt{A5} & \texttt{B09A} & I & \texttt{} & \texttt{JMP  release} & {\footnotesize } \\
+\texttt{A6} & \texttt{1200} & I & \texttt{trip\_fault} & \texttt{LDI  R1, A\_OFF} & {\footnotesize } \\
+\texttt{A7} & \texttt{7380} & R & \texttt{} & \texttt{ST   R1, [R6]} & {\footnotesize software clears MOTOR\_EN request (needed for re-arm)} \\
+\texttt{A8} & \texttt{1EFA} & I & \texttt{} & \texttt{LDI  R7, T\_CTRL} & {\footnotesize } \\
+\texttt{A9} & \texttt{1202} & I & \texttt{} & \texttt{LDI  R1, 0x02} & {\footnotesize } \\
+\texttt{AA} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize stop timer} \\
+\texttt{AB} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, DISPLAY} & {\footnotesize } \\
+\texttt{AC} & \texttt{12EE} & I & \texttt{} & \texttt{LDI  R1, 0xEE} & {\footnotesize } \\
+\texttt{AD} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize } \\
+\texttt{AE} & \texttt{1EF0} & I & \texttt{} & \texttt{LDI  R7, IN\_STATUS} & {\footnotesize } \\
+\texttt{AF} & \texttt{1810} & I & \texttt{} & \texttt{LDI  R4, 0x10} & {\footnotesize } \\
+\texttt{B0} & \texttt{63C0} & R & \texttt{wait\_rearm} & \texttt{LD   R1, [R7]} & {\footnotesize } \\
+\texttt{B1} & \texttt{5300} & R & \texttt{} & \texttt{AND  R1, R4} & {\footnotesize } \\
+\texttt{B2} & \texttt{A2B0} & I & \texttt{} & \texttt{BNEZ R1, wait\_rearm} & {\footnotesize TRIP clears only after door closed + new START edge} \\
+\texttt{B3} & \texttt{B009} & I & \texttt{} & \texttt{JMP  idle\_wait} & {\footnotesize re-armed: START is held, a fresh cycle begins} \\

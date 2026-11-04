@@ -1,0 +1,10 @@
+5 & \texttt{04 LDI R7, 0xF5} & \texttt{03 LDI R1, 0x09} & \texttt{02 LDI R3, 0x07} & \texttt{01 LDI R4, 0xF4} & \texttt{00 LDI R2, 0x21} & 0 & 0 & -- & -- & R2$\leftarrow$21 \\
+6 & \texttt{05 SUB R1, R1} & \texttt{04 LDI R7, 0xF5} & \texttt{03 LDI R1, 0x09} & \texttt{02 LDI R3, 0x07} & \texttt{01 LDI R4, 0xF4} & 0 & 0 & -- & -- & R4$\leftarrow$F4 \\
+7 & \texttt{06 BEQZ R1, target1} & \texttt{05 SUB R1, R1} & \texttt{04 LDI R7, 0xF5} & \texttt{03 LDI R1, 0x09} & \texttt{02 LDI R3, 0x07} & 0 & 0 & -- & -- & R3$\leftarrow$07 \\
+8 & \texttt{07 ST R2, [R4]} & \texttt{06 BEQZ R1, target1} & \texttt{05 SUB R1, R1} & \texttt{04 LDI R7, 0xF5} & \texttt{03 LDI R1, 0x09} & 0 & 0 & MEM/WB & MEM/WB & R1$\leftarrow$09 \\
+9 & \texttt{08 ADD R3, R4} & \texttt{07 ST R2, [R4]} & \texttt{06 BEQZ R1, target1} & \texttt{05 SUB R1, R1} & \texttt{04 LDI R7, 0xF5} & 0 & \textbf{1} & EX/MEM & -- & R7$\leftarrow$F5 \\
+10 & \texttt{09 BNEZ R1, bad} & \bub{08 ADD R3, R4} & \bub{07 ST R2, [R4]} & \texttt{06 BEQZ R1, target1} & \texttt{05 SUB R1, R1} & 0 & 0 & -- & -- & R1$\leftarrow$00 \\
+11 & \texttt{0A BNEZ R3, target2} & \texttt{09 BNEZ R1, bad} & \bub{08 ADD R3, R4} & \bub{07 ST R2, [R4]} & \texttt{06 BEQZ R1, target1} & 0 & 0 & -- & -- & -- \\
+12 & \texttt{0B HALT} & \texttt{0A BNEZ R3, target2} & \texttt{09 BNEZ R1, bad} & \bub{08 ADD R3, R4} & \bub{07 ST R2, [R4]} & 0 & 0 & -- & -- & -- \\
+13 & \texttt{0C ST R2, [R4]} & \texttt{0B HALT} & \texttt{0A BNEZ R3, target2} & \texttt{09 BNEZ R1, bad} & \bub{08 ADD R3, R4} & 0 & \textbf{1} & -- & -- & -- \\
+14 & \texttt{0D ST R3, [R7]} & \bub{0C ST R2, [R4]} & \bub{0B HALT} & \texttt{0A BNEZ R3, target2} & \texttt{09 BNEZ R1, bad} & 0 & 0 & -- & -- & -- \\

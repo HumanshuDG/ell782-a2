@@ -1,0 +1,32 @@
+\texttt{00} & \texttt{125A} & I & \texttt{} & \texttt{LDI  R1, 0x5A} & {\footnotesize } \\
+\texttt{01} & \texttt{1400} & I & \texttt{} & \texttt{LDI  R2, 0x00} & {\footnotesize } \\
+\texttt{02} & \texttt{7280} & R & \texttt{} & \texttt{ST   R1, [R2]} & {\footnotesize RAM[0x00] = 0x5A} \\
+\texttt{03} & \texttt{1633} & I & \texttt{} & \texttt{LDI  R3, 0x33} & {\footnotesize } \\
+\texttt{04} & \texttt{146F} & I & \texttt{} & \texttt{LDI  R2, 0x6F} & {\footnotesize } \\
+\texttt{05} & \texttt{7680} & R & \texttt{} & \texttt{ST   R3, [R2]} & {\footnotesize RAM[0x6F] = 0x33} \\
+\texttt{06} & \texttt{16A5} & I & \texttt{} & \texttt{LDI  R3, 0xA5} & {\footnotesize } \\
+\texttt{07} & \texttt{147F} & I & \texttt{} & \texttt{LDI  R2, 0x7F} & {\footnotesize } \\
+\texttt{08} & \texttt{7680} & R & \texttt{} & \texttt{ST   R3, [R2]} & {\footnotesize RAM[0x7F] = 0xA5} \\
+\texttt{09} & \texttt{1A77} & I & \texttt{} & \texttt{LDI  R5, 0x77} & {\footnotesize } \\
+\texttt{0A} & \texttt{1880} & I & \texttt{} & \texttt{LDI  R4, 0x80} & {\footnotesize } \\
+\texttt{0B} & \texttt{7B00} & R & \texttt{} & \texttt{ST   R5, [R4]} & {\footnotesize reserved 0x80: ignored (would alias RAM[0x00])} \\
+\texttt{0C} & \texttt{18EF} & I & \texttt{} & \texttt{LDI  R4, 0xEF} & {\footnotesize } \\
+\texttt{0D} & \texttt{7B00} & R & \texttt{} & \texttt{ST   R5, [R4]} & {\footnotesize reserved 0xEF: ignored (would alias RAM[0x6F])} \\
+\texttt{0E} & \texttt{18FF} & I & \texttt{} & \texttt{LDI  R4, 0xFF} & {\footnotesize } \\
+\texttt{0F} & \texttt{7B00} & R & \texttt{} & \texttt{ST   R5, [R4]} & {\footnotesize unimplemented peripheral: ignored (alias RAM[0x7F])} \\
+\texttt{10} & \texttt{18F0} & I & \texttt{} & \texttt{LDI  R4, 0xF0} & {\footnotesize } \\
+\texttt{11} & \texttt{7B00} & R & \texttt{} & \texttt{ST   R5, [R4]} & {\footnotesize read-only IN\_STATUS: ignored} \\
+\texttt{12} & \texttt{6C80} & R & \texttt{} & \texttt{LD   R6, [R2]} & {\footnotesize R6 = RAM[0x7F] = 0xA5} \\
+\texttt{13} & \texttt{1400} & I & \texttt{} & \texttt{LDI  R2, 0x00} & {\footnotesize } \\
+\texttt{14} & \texttt{6E80} & R & \texttt{} & \texttt{LD   R7, [R2]} & {\footnotesize R7 = RAM[0x00] = 0x5A} \\
+\texttt{15} & \texttt{146F} & I & \texttt{} & \texttt{LDI  R2, 0x6F} & {\footnotesize } \\
+\texttt{16} & \texttt{6280} & R & \texttt{} & \texttt{LD   R1, [R2]} & {\footnotesize R1 = RAM[0x6F] = 0x33} \\
+\texttt{17} & \texttt{1880} & I & \texttt{} & \texttt{LDI  R4, 0x80} & {\footnotesize } \\
+\texttt{18} & \texttt{6100} & R & \texttt{} & \texttt{LD   R0, [R4]} & {\footnotesize R0 = 0x00 (reserved reads 0)} \\
+\texttt{19} & \texttt{18EF} & I & \texttt{} & \texttt{LDI  R4, 0xEF} & {\footnotesize } \\
+\texttt{1A} & \texttt{6700} & R & \texttt{} & \texttt{LD   R3, [R4]} & {\footnotesize R3 = 0x00} \\
+\texttt{1B} & \texttt{18F7} & I & \texttt{} & \texttt{LDI  R4, 0xF7} & {\footnotesize } \\
+\texttt{1C} & \texttt{6B00} & R & \texttt{} & \texttt{LD   R5, [R4]} & {\footnotesize R5 = 0x00 (unimplemented peripheral)} \\
+\texttt{1D} & \texttt{18F5} & I & \texttt{} & \texttt{LDI  R4, 0xF5} & {\footnotesize } \\
+\texttt{1E} & \texttt{7D00} & R & \texttt{} & \texttt{ST   R6, [R4]} & {\footnotesize DISPLAY = 0xA5} \\
+\texttt{1F} & \texttt{F000} & N & \texttt{} & \texttt{HALT} & {\footnotesize } \\

@@ -1,0 +1,27 @@
+\texttt{00} & \texttt{1EF4} & I & \texttt{} & \texttt{LDI  R7, 0xF4} & {\footnotesize ACT} \\
+\texttt{01} & \texttt{1CF0} & I & \texttt{} & \texttt{LDI  R6, 0xF0} & {\footnotesize IN\_STATUS} \\
+\texttt{02} & \texttt{1AF5} & I & \texttt{} & \texttt{LDI  R5, 0xF5} & {\footnotesize DISPLAY} \\
+\texttt{03} & \texttt{1801} & I & \texttt{} & \texttt{LDI  R4, 0x01} & {\footnotesize START mask} \\
+\texttt{04} & \texttt{1610} & I & \texttt{} & \texttt{LDI  R3, 0x10} & {\footnotesize TRIP mask} \\
+\texttt{05} & \texttt{1224} & I & \texttt{} & \texttt{LDI  R1, 0x24} & {\footnotesize } \\
+\texttt{06} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize request DOOR\_LOCK + MOTOR\_EN} \\
+\texttt{07} & \texttt{1201} & I & \texttt{} & \texttt{LDI  R1, 0x01} & {\footnotesize } \\
+\texttt{08} & \texttt{7340} & R & \texttt{} & \texttt{ST   R1, [R5]} & {\footnotesize DISPLAY = 1 : motor requested} \\
+\texttt{09} & \texttt{6580} & R & \texttt{waitS} & \texttt{LD   R2, [R6]} & {\footnotesize } \\
+\texttt{0A} & \texttt{5500} & R & \texttt{} & \texttt{AND  R2, R4} & {\footnotesize } \\
+\texttt{0B} & \texttt{9409} & I & \texttt{} & \texttt{BEQZ R2, waitS} & {\footnotesize wait for a START press (request still active)} \\
+\texttt{0C} & \texttt{6580} & R & \texttt{waitR} & \texttt{LD   R2, [R6]} & {\footnotesize } \\
+\texttt{0D} & \texttt{5500} & R & \texttt{} & \texttt{AND  R2, R4} & {\footnotesize } \\
+\texttt{0E} & \texttt{A40C} & I & \texttt{} & \texttt{BNEZ R2, waitR} & {\footnotesize wait for START release} \\
+\texttt{0F} & \texttt{1220} & I & \texttt{} & \texttt{LDI  R1, 0x20} & {\footnotesize } \\
+\texttt{10} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize software clears MOTOR\_EN request} \\
+\texttt{11} & \texttt{1202} & I & \texttt{} & \texttt{LDI  R1, 0x02} & {\footnotesize } \\
+\texttt{12} & \texttt{7340} & R & \texttt{} & \texttt{ST   R1, [R5]} & {\footnotesize DISPLAY = 2 : waiting for re-arm} \\
+\texttt{13} & \texttt{6580} & R & \texttt{waitT} & \texttt{LD   R2, [R6]} & {\footnotesize } \\
+\texttt{14} & \texttt{54C0} & R & \texttt{} & \texttt{AND  R2, R3} & {\footnotesize } \\
+\texttt{15} & \texttt{A413} & I & \texttt{} & \texttt{BNEZ R2, waitT} & {\footnotesize until hardware TRIP is cleared} \\
+\texttt{16} & \texttt{1224} & I & \texttt{} & \texttt{LDI  R1, 0x24} & {\footnotesize } \\
+\texttt{17} & \texttt{73C0} & R & \texttt{} & \texttt{ST   R1, [R7]} & {\footnotesize request motor again} \\
+\texttt{18} & \texttt{1203} & I & \texttt{} & \texttt{LDI  R1, 0x03} & {\footnotesize } \\
+\texttt{19} & \texttt{7340} & R & \texttt{} & \texttt{ST   R1, [R5]} & {\footnotesize DISPLAY = 3 : running again} \\
+\texttt{1A} & \texttt{F000} & N & \texttt{} & \texttt{HALT} & {\footnotesize } \\

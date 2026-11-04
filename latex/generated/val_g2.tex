@@ -1,0 +1,6 @@
+2a & \S8.4 \texttt{SUB R1,R1; BEQZ R1,T; ST R2,[Rvalve]; ADD R3,R4}; R2=21, Rvalve=F4 & branch taken in EX (R1 via EX/MEM); IF/ID and ID/EX invalidated; wrong-path store reaches MEM with V=0; VALVE/ACT never written & cyc 9: flush=1, FwdA=EX/MEM; cyc 10: IFID.V=0, IDEX.V=0; cyc 11: ST in MEM V=0; valid stores to F4: 0; ACT=00 throughout & \pass \\ \hline
+2b & wrong-path \texttt{ADD R3,R4} & R3 keeps 07 (DISPLAY shows 07) & writes to R3: 07 (only the LDI); DISPLAY=07 at cyc 18 & \pass \\ \hline
+2c & \texttt{BNEZ R1,bad} with R1=0 & not taken, no flush & cyc 12: flush=0 & \pass \\ \hline
+2d & wrong-path \texttt{HALT} at 0B (after taken BNEZ) and 0F/10 (after JMP) & flushed before EX; execution continues to DISPLAY=AA & wrong-path HALTs valid in EX: 0; DISPLAY=AA at cyc 23; HALTED first at cyc 23 by HALT @13 & \pass \\ \hline
+2e & real \texttt{HALT} followed by \texttt{ST R2,[R4]} & younger store killed; fetch stops; remains halted & store @14 valid in MEM: False; ACT=00; PC frozen at 15 & \pass \\ \hline
+2f & whole program vs. ISA reference model & identical write sequence & 9 writes, identical & \pass \\ \hline

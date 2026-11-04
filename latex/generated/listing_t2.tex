@@ -1,0 +1,25 @@
+\texttt{00} & \texttt{1421} & I & \texttt{} & \texttt{LDI  R2, 0x21} & {\footnotesize LOCK|VALVE pattern (would open the valve)} \\
+\texttt{01} & \texttt{18F4} & I & \texttt{} & \texttt{LDI  R4, 0xF4} & {\footnotesize Rvalve = actuator latch} \\
+\texttt{02} & \texttt{1607} & I & \texttt{} & \texttt{LDI  R3, 0x07} & {\footnotesize } \\
+\texttt{03} & \texttt{1209} & I & \texttt{} & \texttt{LDI  R1, 0x09} & {\footnotesize } \\
+\texttt{04} & \texttt{1EF5} & I & \texttt{} & \texttt{LDI  R7, 0xF5} & {\footnotesize DISPLAY} \\
+\texttt{05} & \texttt{4240} & R & \texttt{} & \texttt{SUB  R1, R1} & {\footnotesize R1 = 0} \\
+\texttt{06} & \texttt{9209} & I & \texttt{} & \texttt{BEQZ R1, target1} & {\footnotesize taken, R1 forwarded from EX/MEM} \\
+\texttt{07} & \texttt{7500} & R & \texttt{} & \texttt{ST   R2, [R4]} & {\footnotesize wrong path: must not write the valve} \\
+\texttt{08} & \texttt{3700} & R & \texttt{} & \texttt{ADD  R3, R4} & {\footnotesize wrong path} \\
+\texttt{09} & \texttt{A216} & I & \texttt{target1} & \texttt{BNEZ R1, bad} & {\footnotesize not taken (R1 = 0)} \\
+\texttt{0A} & \texttt{A60D} & I & \texttt{} & \texttt{BNEZ R3, target2} & {\footnotesize taken (R3 = 7)} \\
+\texttt{0B} & \texttt{F000} & N & \texttt{} & \texttt{HALT} & {\footnotesize wrong-path HALT: flushed, must not stop} \\
+\texttt{0C} & \texttt{7500} & R & \texttt{} & \texttt{ST   R2, [R4]} & {\footnotesize wrong path} \\
+\texttt{0D} & \texttt{77C0} & R & \texttt{target2} & \texttt{ST   R3, [R7]} & {\footnotesize DISPLAY = 0x07 (R3 untouched by wrong path)} \\
+\texttt{0E} & \texttt{B011} & I & \texttt{} & \texttt{JMP  target3} & {\footnotesize } \\
+\texttt{0F} & \texttt{F000} & N & \texttt{} & \texttt{HALT} & {\footnotesize wrong-path HALT behind a jump} \\
+\texttt{10} & \texttt{F000} & N & \texttt{} & \texttt{HALT} & {\footnotesize } \\
+\texttt{11} & \texttt{1CAA} & I & \texttt{target3} & \texttt{LDI  R6, 0xAA} & {\footnotesize } \\
+\texttt{12} & \texttt{7DC0} & R & \texttt{} & \texttt{ST   R6, [R7]} & {\footnotesize DISPLAY = 0xAA: execution continued} \\
+\texttt{13} & \texttt{F000} & N & \texttt{} & \texttt{HALT} & {\footnotesize real HALT} \\
+\texttt{14} & \texttt{7500} & R & \texttt{} & \texttt{ST   R2, [R4]} & {\footnotesize younger than HALT: killed} \\
+\texttt{15} & \texttt{1C55} & I & \texttt{} & \texttt{LDI  R6, 0x55} & {\footnotesize } \\
+\texttt{16} & \texttt{1CBD} & I & \texttt{bad} & \texttt{LDI  R6, 0xBD} & {\footnotesize } \\
+\texttt{17} & \texttt{7DC0} & R & \texttt{} & \texttt{ST   R6, [R7]} & {\footnotesize } \\
+\texttt{18} & \texttt{F000} & N & \texttt{} & \texttt{HALT} & {\footnotesize } \\
